@@ -1,0 +1,31 @@
+#idk what it did
+export PATH="/Users/jsmith/anaconda3/bin:$PATH"
+
+##check available modules
+module avail
+module load python/3.8.6
+sha256sum Miniconda3-py38_23.5.2-0-Linux-x86_64.sh
+bash Miniconda3-py38_23.5.2-0-Linux-x86_64.sh
+
+conda install -y -c bioconda trimal
+conda install -y -c bioconda iqtree 
+conda install -y -c bioconda trnascan-se
+conda install -y -c bioconda r-base (? stoped , check again)
+conda install -y -c bioconda r-stringi
+conda install -c r r-tidyverse
+conda install -y -c bioconda r-magrittr
+conda install -y -c bioconda r-optparse
+conda install -y -c bioconda bioconductor-qvalue
+conda install -y -c bioconda fasttree
+conda install -y -c bioconda vmatch
+
+
+wget https://data.ace.uq.edu.au/public/CheckM_databases/checkm_data_2015_01_16.tar.gz
+export CHECKM_DATA_PATH=$WORK/databases
+
+checkm test .
+anvi-self-test --suite mini --no-interactive
+
+
+> checkm lineage_wf <bin folder> <output folder>
+

@@ -1,0 +1,92 @@
+#####20230718 trying checkm####
+
+#checkm lineage_wf <bin folder> <output folder>
+#checkm lineage_wf -t 8 -x fa /home/donovan/bins /home/donovan/checkm
+
+
+checkm lineage_wf -x fa spades.230600001074-DS201_23Jun1074-DL201_S201_L001/SUMMARY/bin_by_bin/Bin_1 spades.230600001074-DS201_23Jun1074-DL201_S201_L001/checkm.out
+
+#usage: checkm qa [-h] [-o {1,2,3,4,5,6,7,8,9}]
+                 [--exclude_markers EXCLUDE_MARKERS] [--individual_markers]
+                 [--skip_adj_correction] [--skip_pseudogene_correction]
+                 [--aai_strain AAI_STRAIN] [-a ALIGNMENT_FILE]
+                 [--ignore_thresholds] [-e E_VALUE] [-l LENGTH]
+                 [-c COVERAGE_FILE] [-f FILE] [--tab_table] [-t THREADS] [-q]
+                 [--tmpdir TMPDIR]
+                 marker_file analyze_dir
+
+cd $WORK/database/20230706mg
+mkdir archaea_bins
+cp -r spades.230600001074-DS201_23Jun1074-DL201_S201_L001/SUMMARY/bin_by_bin/Bin_1 ./archaea_bins/
+cp -r spades.230600001074-DS202_23Jun1074-DL202_S202_L001/SUMMARY/bin_by_bin/Bin_7a ./archaea_bins/
+cp -r spades.230600001074-DS203_23Jun1074-DL203_S203_L001/SUMMARY/bin_by_bin/Bin_52a ./archaea_bins/
+cp -r spades.230600001074-DS204_23Jun1074-DL204_S204_L001/SUMMARY/bin_by_bin/Bin_571-39 ./archaea_bins/
+cp -r spades.230600001074-DS205_23Jun1074-DL205_S205_L001/SUMMARY/bin_by_bin/Bin_68KS/ ./archaea_bins/
+cp -r spades.230600001074-DS206_23Jun1074-DL206_S206_L001/SUMMARY/bin_by_bin/Bin_7KS ./archaea_bins/
+cp -r spades.230600001074-DS208_23Jun1074-DL208_S208_L001/SUMMARY/bin_by_bin/Bin_571-17/ ./archaea_bins/
+cp -r spades.230600001074-DS219_23Jun1074-DL219_S219_L001/SUMMARY/bin_by_bin/Bin_580-32/ ./archaea_bins/
+
+
+
+conda create -n mamba -c conda-forge mamba
+mamba create -n checkm2 -c bioconda -c conda-forge checkm2 python=3.8
+##doesnt need to activate mamba
+mamba activate checkm2
+
+ 1013  mamba create -n checkm2 -c bioconda -c conda-forge checkm2
+
+###checkm running
+#download ref file to databases
+gunzip checkm_data_2015_01_16.tar.gz
+tar xvf checkm_data_2015_01_16.tar
+CHECKM_DATA_PATH=$WORK/databases
+checkm data setRoot $WORK/databases
+
+cd $WORK/database/20230706mg
+checkm lineage_wf -x fa ./archaea_bins ./archaea_bins/checkm.out
+###result
+##Bin_6a = Bin_1
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Bin Id                  Marker lineage    # genomes   # markers   # marker sets   0     1    2   3   4   5+   Completeness   Contamination   Strain heterogeneity  
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Bin_6a-contigs         k__Archaea (UID2)      207         145           103        0    144   1   0   0   0       100.00           0.97               0.00          
+  Bin_7a-contigs        k__Archaea (UID2)      207         145           103        1    143   1   0   0   0       99.51            0.97               0.00          
+  Bin_7KS_2nd-contigs   k__Archaea (UID2)      207         145           103        1    143   1   0   0   0       99.51            0.97               0.00          
+  Bin_68KS-contigs      k__Archaea (UID2)      207         145           103        1    143   1   0   0   0       99.03            0.97               0.00          
+  Bin_580-32-contigs    k__Archaea (UID2)      207         145           103        1    143   1   0   0   0       99.03            0.97               0.00          
+  Bin-32a-contigs       k__Archaea (UID2)      207         145           103        1    143   1   0   0   0       99.03            0.97               0.00          
+  Bin_571-39-contigs    k__Archaea (UID2)      207         145           103        4    140   1   0   0   0       97.57            0.97              100.00         
+  Bin-7KS-1st-contigs   k__Archaea (UID2)      207         145           103        15   130   0   0   0   0       97.09            0.00               0.00          
+  Bin_571-17-contigs    k__Archaea (UID2)      207         145           103        4    138   3   0   0   0       96.12            2.91              100.00         
+  Bin_52a-contigs       k__Archaea (UID2)      207         145           103        8    129   8   0   0   0       93.61            4.69              75.00          
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+##checkm2
+#test run result, quite different from the result on their readme
+Name  Completeness  Contamination         Completeness_Model_Used  Translation_Table_Used
+TEST1        100.00           0.74 Neural Network (Specific Model)                      11
+TEST2         98.54           0.21 Neural Network (Specific Model)                      11
+TEST3         98.75           0.51 Neural Network (Specific Model)                      11
+
+checkm2 predict --threads 30 -x fa --force --input ./archaea_bins --output-directory ./archaea_bins/checkm2.out 
+
+cat archaea_bins/checkm2.out/quality_report.tsv 
+Name	Completeness	Contamination	Completeness_Model_Used	Translation_Table_Used	Coding_Density	Contig_N50	Average_Gene_Length	Genome_Size	GC_Content	Total_Coding_Sequences	Additional_Notes
+Bin-32a-contigs	99.85	0.01	Neural Network (Specific Model)	11	0.906	162710	246.64509605662286	1611772	0.33	1978	None
+Bin-7KS-1st-contigs	93.94	0.2	Neural Network (Specific Model)	11	0.904	52473	239.27844311377245	1323497	0.32	1670	None
+Bin_6a-contigs	99.68	0.19	Neural Network (Specific Model)	11	0.909	170457	243.70298047276464	1562352	0.33	1946	None
+Bin_52a-contigs	93.03	3.6	Neural Network (Specific Model)	11	0.92	14990	237.09592188397474	1342977	0.33	1741	None
+Bin_571-17-contigs	94.87	6.03	Neural Network (Specific Model)	11	0.901	31271	238.08686659772493	1529791	0.32	1934	None
+Bin_571-39-contigs	96.9	2.4	Neural Network (Specific Model)	11	0.905	36701	241.0341488277268	1563542	0.32	1962	None
+Bin_580-32-contigs	99.67	0.1	Neural Network (Specific Model)	11	0.911	234725	250.74034902168165	1558376	0.33	1891	None
+Bin_68KS-contigs	99.82	0.27	Neural Network (Specific Model)	11	0.9	70200	245.52726492056678	1901768	0.33	2329	None
+Bin_7KS_2nd-contigs	99.88	0.2	Neural Network (Specific Model)	11	0.901	141908	245.45497856121963	1711423	0.33	2099	None
+Bin_7a-contigs	99.54	0.11	Neural Network (Specific Model)	11	0.899	25495	239.04476908576814	1689077	0.33	2122	None
+
+
+#first chapter - quality check of genome
+#second chapter - phylogeny
+#third - pangenomics

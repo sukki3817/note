@@ -1,7 +1,16 @@
+##################### > 5000 ########################
+
 conda create -n trimmomatic
 conda install -c bioconda trimmomatic
 
+conda create -n spades
+conda install -y -c bioconda spades
 
+mkdir 20230720
+cp ./20230706mg/spades.* ./20230720
+cp ./20230706mg/230600001074* ./20230720
+
+#trimmomatic
 for i in *R1*gz
 do 
 filestem=`basename $i _R1_001.fastq.gz`
@@ -10,7 +19,133 @@ R2=$filestem"_R2_001.fastq.gz"
 sbatch -p cluster -t 4:00:00 --mem=100000 -J trimmomatic -o trim.out -e trim.err -n 30 --wrap="trimmomatic PE -threads 30 $R1 $R2 paired-$R1 unpaired-paired-$R1 paired-$R2 unpaired-$R2 ILLUMINACLIP:$HOME/anaconda3/envs/trimmomatic/share/trimmomatic-0.39-2/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:25:30 MINLEN:50"
 done
 
+#spade (3.15.5)
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J spades -o spades.out -e spades.err -n 30 --wrap="spades.py --sc -m 100 --pe1-1 paired-$R1 --pe1-2 paired-$R2 -o spades.$filestem -t 32 -k 21,33,55,77,99,127"
+done
+
+#spades.py --sc -m 100 --pe1-1 paired-$R1 --pe1-2 paired-$R2 -o spades.$filestem -t 32 -k 21,33,55,77,99,127
 
 
-conda 
-conda install -c -y bioconda spades
+
+conda activate anvio-7.1
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J reformat -o reform.out -e reform.err -n 30 --wrap="anvi-script-reformat-fasta -l 5000 --simplify-names --prefix c -o spades.$filestem/5k.contigs.fasta spades.$filestem/contigs.fasta"
+done
+
+#bowtie-building
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J bowtiebuilding -o bowtiebuilding.out -e bowtiebuilding.err -n 30 --wrap="bowtie2-build spades.$filestem/5k.contigs.fasta spades.$filestem/5k.contigs.fasta.bowtie.db"
+done
+
+#bowtie-mapping
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J mapping -o mapping.out -e mapping.err -n 30 --wrap="bowtie2 --threads 30 -x spades.$filestem/5k.contigs.fasta.bowtie.db -1 paired-$R1 -2 paired-$R2 --no-unal -S spades.$filestem/5k.contigs.fasta.bowtie.db.sam"
+done
+
+#anvi-init-bam (raw-bam-file to bam-file for anvio)
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J anvi-init-bam -o anvi-init-bam.out -e anvi-init-bam.err -n 30 --wrap="anvi-init-bam -o spades.$filestem/5k.contigs.fasta.bowtie.db.sam.bam spades.$filestem/5k.contigs.fasta.bowtie.db.sam"
+done
+
+#anvi-gen-contigs-databse
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 24:00:00 --mem=100000 -J dbgen -o dbgen.out -e dbgen.err -n 1 --wrap="anvi-gen-contigs-database -f spades.$filestem/5k.contigs.fasta -o spades.$filestem/5k.contigs.fasta.db -n $filestem"
+done
+
+#anvi-run-hmms
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 24:00:00 --mem=100000 -J hmm -o hmm.out -e hmm.err -n 30 --wrap="anvi-run-hmms -c spades.$filestem/5k.contigs.fasta.db --num-threads 30"
+done
+
+#anvi-profile
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 24:00:00 --mem=100000 -J profile -o profile.out -e profile.err -n 1 --wrap="anvi-profile -i spades.$filestem/5k.contigs.fasta.bowtie.db.sam.bam -c spades.$filestem/5k.contigs.fasta.db -T 30 -M 1000 --cluster-contigs -o spades.$filestem/5k.contigs.fasta.db.sam.bam_profile"
+done
+
+
+anvi-interactive -p ./spades.230600001074-DS201_23Jun1074-DL201_S201_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS201_23Jun1074-DL201_S201_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS202_23Jun1074-DL202_S202_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS202_23Jun1074-DL202_S202_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS203_23Jun1074-DL203_S203_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS203_23Jun1074-DL203_S203_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS204_23Jun1074-DL204_S204_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS204_23Jun1074-DL204_S204_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS205_23Jun1074-DL205_S205_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS205_23Jun1074-DL205_S205_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS206_23Jun1074-DL206_S206_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS206_23Jun1074-DL206_S206_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS208_23Jun1074-DL208_S208_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS208_23Jun1074-DL208_S208_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS209_23Jun1074-DL209_S209_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS209_23Jun1074-DL209_S209_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS210_23Jun1074-DL210_S210_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS210_23Jun1074-DL210_S210_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS211_23Jun1074-DL211_S211_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS211_23Jun1074-DL211_S211_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS212_23Jun1074-DL212_S212_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS212_23Jun1074-DL212_S212_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS213_23Jun1074-DL213_S213_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS213_23Jun1074-DL213_S213_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS214_23Jun1074-DL214_S214_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS214_23Jun1074-DL214_S214_L001/5k.contigs.fasta.db --server-only -P 8081
+anvi-interactive -p ./spades.230600001074-DS217_23Jun1074-DL217_S217_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS217_23Jun1074-DL217_S217_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230600001074-DS219_23Jun1074-DL219_S219_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS219_23Jun1074-DL219_S219_L001/5k.contigs.fasta.db --server-only -P 8080
+
+
+########################co-assembly#####################
+#ASV_897
+cp ./20230417/230300000400-DS27.23Mar400-DL027_S27_L001* ./20230720/co-assembly/
+cp 230600001074-DS204_23Jun1074-DL204_S204_L001* ./co-assembly/
+cp 230600001074-DS208_23Jun1074-DL208_S208_L001* ./co-assembly/
+
+#ASV_352
+cp ./230600001074-DS202_23Jun1074-DL202_S202_L001* ./co-assembly/
+cp ./230600001074-DS206_23Jun1074-DL206_S206_L001* ./co-assembly/
+
+cd $WORK/database/20230720/co-assembly
+#co-assembly with spades(3.15.5)
+sbatch -p cluster -t 24:00:00 --mem=100000 -J spades -o spades.out -e spades.err -n 30 --wrap="spades.py --sc -m 100 --pe1-1 ./ASV_352/230600001074-DS202_23Jun1074-DL202_S202_L001_R1_001.fastq.gz --pe1-2 ./ASV_352/230600001074-DS202_23Jun1074-DL202_S202_L001_R2_001.fastq.gz --pe2-1 ./ASV_352/230600001074-DS206_23Jun1074-DL206_S206_L001_R1_001.fastq.gz --pe2-2 ./ASV_352/230600001074-DS206_23Jun1074-DL206_S206_L001_R2_001.fastq.gz -o spades.ASV_352 -t 32 -k 21,33,55,77,99,127"
+sbatch -p cluster -t 24:00:00 --mem=100000 -J spades -o spades2.out -e spades2.err -n 30 --wrap="spades.py --sc -m 100 --pe1-1 ./ASV_897/230300000400-DS27.23Mar400-DL027_S27_L001_R1_001.fastq.gz --pe1-2 ./ASV_897/230300000400-DS27.23Mar400-DL027_S27_L001_R2_001.fastq.gz --pe2-1 ./ASV_897/230600001074-DS204_23Jun1074-DL204_S204_L001_R1_001.fastq.gz --pe2-2 ./ASV_897/230600001074-DS204_23Jun1074-DL204_S204_L001_R2_001.fastq.gz --pe3-1 ./ASV_897/230600001074-DS208_23Jun1074-DL208_S208_L001_R1_001.fastq.gz --pe3-2 ./ASV_897/230600001074-DS208_23Jun1074-DL208_S208_L001_R2_001.fastq.gz -o spades.ASV_897 -t 32 -k 21,33,55,77,99,127"
+
+#anvi-script-reformat-fasta >5000
+sbatch -p cluster -t 4:00:00 --mem=100000 -J reformat -o reform.out -e reform.err -n 30 --wrap="anvi-script-reformat-fasta -l 5000 --simplify-names --prefix c -o spades.ASV_352/5k.contigs.fasta spades.ASV_352/contigs.fasta"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J reformat -o reform.out -e reform.err -n 30 --wrap="anvi-script-reformat-fasta -l 5000 --simplify-names --prefix c -o spades.ASV_897/5k.contigs.fasta spades.ASV_897/contigs.fasta"
+
+#bowtie building
+sbatch -p cluster -t 4:00:00 --mem=100000 -J bowtiebuilding -o bowtiebuilding.out -e bowtiebuilding.err -n 30 --wrap="bowtie2-build spades.ASV_352/5k.contigs.fasta spades.ASV_352/5k.contigs.fasta.bowtie.db"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J bowtiebuilding -o bowtiebuilding.out -e bowtiebuilding.err -n 30 --wrap="bowtie2-build spades.ASV_897/5k.contigs.fasta spades.ASV_897/5k.contigs.fasta.bowtie.db"
+
+#bowtie mapping
+-ing
+sbatch -p cluster -t 4:00:00 --mem=100000 -J mapping -o mapping.out -e mapping.err -n 30 --wrap="bowtie2 --threads 30 -x spades.ASV_352/5k.contigs.fasta.bowtie.db -1 paired-$R1 -2 paired-$R2 --no-unal -S spades.$filestem/5k.contigs.fasta.bowtie.db.sam"
+
+
+
+#map separately
+
+bowtie
+
+
+

@@ -24,4 +24,5 @@ done
 
 scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230706mg/archaea_bins/5000* .
 
-checkm
+#checkm
+checkm lineage_wf -x fa ./archaea_bins/5000 ./archaea_bins/5000/checkm.out

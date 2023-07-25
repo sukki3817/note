@@ -401,5 +401,5 @@ metabat.KBP569_Feb_25m_nospike.7	94.58	0.32	Neural Network (Specific Model)	11	0
 
 
 
-fastANI
+scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230720/archaea_bins/Bin_7KS-2nd-contigs.fa .
 

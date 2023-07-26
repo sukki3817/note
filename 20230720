@@ -7,7 +7,6 @@ conda create -n spades
 conda install -y -c bioconda spades
 
 mkdir 20230720
-cp ./20230706mg/spades.* ./20230720
 cp ./20230706mg/230600001074* ./20230720
 
 #trimmomatic

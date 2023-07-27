@@ -1,0 +1,37 @@
+#david code
+
+ls $WORK/needham_illumina_data/JF_Needham_amplicons_1757/renamed_files/metag/
+for i in $WORK/needham_illumina_data/JF_Needham_amplicons_1757/renamed_files/metag/*R1*gz
+do
+filestem=`basename $i _S1_L001_R1_001.fastq.gz `
+R1=$filestem"_S1_L001_R1_001.fastq.gz"
+R2=$filestem"_S1_L001_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J cat -o drep.out -e drep.err -n 30 --wrap="trimmomatic PE -threads 30 $WORK/needham_illumina_data/JF_Needham_amplicons_1757/renamed_files/metag/$R1 $WORK/needham_illumina_data/JF_Needham_amplicons_1757/renamed_files/metag/$R2 paired-$R1 unpaired-$R1 paired-$R2 unpaired-$R2 ILLUMINACLIP:~/miniconda/envs/trimmomatic/share/trimmomatic-0.39-1/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:25:30 MINLEN:50"
+done
+for i in `ls pair*R1*gz`
+do
+filestem=`basename $i _S1_L001_R1_001.fastq.gz`
+R1=$filestem"_S1_L001_R1_001.fastq.gz"
+R2=$filestem"_S1_L001_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J cat -o drep.out -e drep.err -n 30 --wrap="spades.py --sc -m 100 --pe1-1 $R1 --pe1-2 $R2 -o spades.$filestem -t 32 -k 21,33,55,77,99,127"
+done
+for i in `ls pair*R1*gz`
+do
+filestem=`basename $i _S1_L001_R1_001.fastq.gz`
+R1=$filestem"_S1_L001_R1_001.fastq.gz"
+R2=$filestem"_S1_L001_R2_001.fastq.gz"
+#anvi-script-reformat-fasta -l 5000 --simplify-names --prefix c -o spades.$filestem/5k.contigs.fasta spades.$filestem/contigs.fasta
+#bowtie2-build spades.$filestem/5k.contigs.fasta spades.$filestem/5k.contigs.fasta.bowtie.db
+#sbatch -p cluster -t 6:00:00 --mem=100000 -J cat -o drep.out -e drep.err -n 30 --wrap="bowtie2 --threads 30 -x spades.$filestem/5k.contigs.fasta.bowtie.db -1 $R1 -2 $R2 --no-unal -S spades.$filestem/5k.contigs.fasta.bowtie.db.sam"
+#anvi-init-bam -o spades.$filestem/5k.contigs.fasta.bowtie.db.sam.bam spades.$filestem/5k.contigs.fasta.bowtie.db.sam
+#sbatch -p cluster -t 24:00:00 --mem=100000 -J cat -o drep.out -e drep.err -n 1 --wrap="anvi-gen-contigs-database -f spades.$filestem/5k.contigs.fasta -o spades.$filestem/5k.contigs.fasta.db -n $filestem"
+#sbatch -p cluster -t 24:00:00 --mem=100000 -J cat -o drep.out -e drep.err -n 30 --wrap="anvi-run-hmms -c spades.$filestem/5k.contigs.fasta.db --num-threads 30"
+sbatch -p cluster -t 24:00:00 --mem=100000 -J cat -o drep.out -e drep.err -n 30 --wrap="anvi-profile -i spades.$filestem/5k.contigs.fasta.bowtie.db.sam.bam -c spades.$filestem/5k.contigs.fasta.db -T 30 -M 5000 --cluster-contigs -o spades.$filestem/5k.contigs.fasta.db.sam.bam_profile"
+done
+ssh -L 8084:localhost:8084 smomw456@nesh-fe.rz.uni-kiel.de
+conda activate anvio-7.2
+for i in `ls pair*R1*gz | head -1 | tail -n+0`
+do
+filestem=`basename $i _S1_L001_R1_001.fastq.gz`
+anvi-interactive -c spades.$filestem/5k.contigs.fasta.db -p spades.$filestem/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db --server-only -P 8084
+done

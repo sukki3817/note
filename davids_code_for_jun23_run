@@ -35,3 +35,13 @@ do
 filestem=`basename $i _S1_L001_R1_001.fastq.gz`
 anvi-interactive -c spades.$filestem/5k.contigs.fasta.db -p spades.$filestem/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db --server-only -P 8084
 done
+
+
+
+grep -c ">" spades.paired-archenrich_metag_54a_3Aug22/5k.contigs.fasta
+grep -c ">" spades.paired-archenrich_metag_54a_3Aug22/contigs.fasta
+
+grep -c ">" spades.230600001074-DS203_23Jun1074-DL203_S203_L001/5k.contigs.fasta
+grep -c ">" spades.230600001074-DS203_23Jun1074-DL203_S203_L001/contigs.fasta
+
+spades.230600001074-DS203_23Jun1074-DL203_S203_L001

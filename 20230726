@@ -1,0 +1,170 @@
+mkdir archaea_bins
+cp ../20230720/archaea_bins/* ./archaea_bins/
+rm archaea_bins/metabat.BB04_55m_spike.121.fa 
+rm archaea_bins/7KS_vs_co-assembled
+rm archaea_bins/Bin_7a-contigs.fa
+rm archaea_bins/Bin5k_571-39-contigs.fa 
+rm aarchaea_bins/Bin_571-17-contigs.fa
+rm archaea_bins/Bin_571-14-contigs.fa
+rm archaea_bins/Bin_ASV352-contigs.fa 
+cp ../20220922/32_archaea_bin/Bin_1-contigs.fa ./archaea_bins/Bin_32a.fa
+cp ../20230419/MY_SUMMARY/bin_by_bin/Bin_1/Bin1-contigs.fa ./archaea_bins/Bin_571-38.fa
+
+### 9 genomes in the dir
+
+
+
+####filter >5000 contigs for 32a , 571-38 :(
+mkdir filter
+cp ../20220922/220800001119-DS32_22Aug1119-DL032_S32_L001_R1_001.fastq.gz ./filter
+cp ../20220922/220800001119-DS32_22Aug1119-DL032_S32_L001_R2_001.fastq.gz ./filter
+cp ../20230419/230300000400-DS27.23Mar400-DL027_S27_L001_R1_001.fastq.gz ./filter
+cp ../20230419/230300000400-DS27.23Mar400-DL027_S27_L001_R2_001.fastq.gz ./filter
+
+cd filter
+#codes from 20230706mg
+####server is not working :))#######
+conda activate trimmomatic
+for i in *R1*gz
+do 
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+trimmomatic PE -threads 30 $R1 $R2 paired-$R1 unpaired-paired-$R1 paired-$R2 unpaired-$R2 ILLUMINACLIP:$HOME/anaconda3/envs/trimmomatic/share/trimmomatic-0.39-2/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:25:30 MINLEN:50
+done
+conda deactivate
+conda activate spades
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+spades.py --sc -m 100 --pe1-1 paired-$R1 --pe1-2 paired-$R2 -o spades.$filestem -t 32 -k 21,33,55,77,99,127
+done
+
+##System information:
+  SPAdes version: 3.15.5
+  Python version: 3.11.4
+  OS: Linux-4.18.0-193.el8.x86_64-x86_64-with-glibc2.28
+  
+conda deactivate
+conda activate anvio-7.1
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+anvi-script-reformat-fasta -l 5000 --simplify-names --prefix c -o spades.$filestem/5k.contigs.fasta spades.$filestem/contigs.fasta
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+bowtie2-build spades.$filestem/5k.contigs.fasta spades.$filestem/5k.contigs.fasta.bowtie.db
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+bowtie2 --threads 30 -x spades.$filestem/5k.contigs.fasta.bowtie.db -1 paired-$R1 -2 paired-$R2 --no-unal -S spades.$filestem/5k.contigs.fasta.bowtie.db.sam
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+anvi-init-bam -o spades.$filestem/5k.contigs.fasta.bowtie.db.sam.bam spades.$filestem/5k.contigs.fasta.bowtie.db.sam
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+anvi-gen-contigs-database -f spades.$filestem/5k.contigs.fasta -o spades.$filestem/5k.contigs.fasta.db -n $filestem
+done
+
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+anvi-run-hmms -c spades.$filestem/5k.contigs.fasta.db --num-threads 30
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+anvi-profile -i spades.$filestem/5k.contigs.fasta.bowtie.db.sam.bam -c spades.$filestem/5k.contigs.fasta.db -T 30 -M 1000 --cluster-contigs -o spades.$filestem/5k.contigs.fasta.db.sam.bam_profile
+done
+
+anvi-interactive -p ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/5k.contigs.fasta.db --server-only -P 8080
+anvi-interactive -p ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/5k.contigs.fasta.db --server-only -P 8080
+
+anvi-summarize -p ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/5k.contigs.fasta.db -o ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/SUMMARY -C default
+anvi-summarize -p ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/5k.contigs.fasta.db -o ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/SUMMARY -C default
+###################################################################################################################
+
+###gtotree
+
+1) Input genomes in one or any combination of the following formats:
+        - [-a <file>] single-column file of NCBI assembly accessions
+        - [-g <file>] single-column file with the paths to each GenBank file
+        - [-f <file>] single-column file with the paths to each fasta file
+        - [-A <file>] single-column file with the paths to each amino acid file,
+                      each file should hold the coding sequences for just one genome
+
+      2)  [-H <file>] location of the uncompressed HMM file being used, or just the
+                      HMM name if you've set the environment variable 'GToTree_HMM_dir'
+                      to the appropriate location or installed via conda (run 'gtt-hmms'
+                      by itself to view the available gene-sets)
+#archaea_bins/bin_list.txt
+BB04_55m_spike_121_1-contigs.fa
+Bin_68KS-contigs.fa
+Bin_32a-contigs.fa
+Bin_6a-contigs.fa
+Bin_54a-contigs.fa
+Bin_7KS-2nd-contigs.fa
+Bin_571-38-contigs.fa
+metabat.KBP569_Feb_25m_nospike.7.fa
+Bin_580-32-contigs.fa
+
+GToTree -f bin_list.txt -H Archaea 
+scp -r smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230726/archaea_bins/GToTree_output . 
+
+
+#NCBI nitrosopumilus
+GCA_000018465.1
+GCA_000875775.1
+GCA_013407185.1
+GCA_000956175.1
+GCA_013407165.1
+GCA_013407145.1
+GCA_000299395.1
+GCA_000299365.1
+GCA_025998175.1
+GCA_018128925.1
+GCA_006740685.1
+
+GToTree -a alteromonas_refseq_accessions.txt -g genbank_files.txt \
+        -f fasta_files.txt -H Gammaproteobacteria \
+        -t -L Species,Strain -m genome_to_id_map.tsv -j 4 \
+        -o Alteromonas_example
+
+GToTree -a nitrosopumilus_refseq_genbank_accessions.txt \
+        -g genbank_files.txt \
+        -f bin_list.txt -H Archaea \
+        -t -L Species,Strain \
+        -o MAGs_with_refseq
+
+
+scp -r smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230726/archaea_bins/MAGs_with_refseq . 
+gtt-hmms

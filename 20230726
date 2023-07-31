@@ -140,6 +140,7 @@ Bin_580-32-contigs.fa
 GToTree -f bin_list.txt -H Archaea 
 scp -r smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230726/archaea_bins/GToTree_output . 
 
+"Nitrosopumilus"[Organism] AND "latest refseq"[filter] AND "complete genome"[filter] 
 
 #NCBI nitrosopumilus
 GCA_000018465.1

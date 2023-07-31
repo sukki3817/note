@@ -1,0 +1,439 @@
+############################# My bin and david's bin are different :o##########################
+
+#in 20230726 folder
+scp smomw456@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw456/sukki_run/arch_bins/archenrich_metag_54a_3Aug22.archaea.fa /gxfs_work1/geomar/smomw536/database/20230726
+
+##Checkm
+#vim 54a
+archenrich_metag_54a_3Aug22.archaea.fa
+
+
+usage: checkm lineage_wf [-h] [-r] [--ali] [--nt] [-g] [-u UNIQUE] [-m MULTI] [--force_domain] [--no_refinement] [--individual_markers] [--skip_adj_correction] [--skip_pseudogene_correction]
+                         [--aai_strain AAI_STRAIN] [-a ALIGNMENT_FILE] [--ignore_thresholds] [-e E_VALUE] [-l LENGTH] [-f FILE] [--tab_table] [-x EXTENSION] [-t THREADS] [--pplacer_threads PPLACER_THREADS] [-q]
+                         [--tmpdir TMPDIR]
+                         bin_input output_dir
+
+checkm lineage_wf -x fa . ./checkm_davids_54a.out
+
+###My bin has 1.05 contam compared to his bin
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Bin Id                 Marker lineage  # genomes  # markers  # marker sets  0   1  2  3  4  5+  Completeness  Contamination  Strain heterogeneity
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ archenrich_metag_54a_3Aug22.archaea  k__Archaea (UID2)   207     145      103    12  133  0  0  0  0    89.32      0.00        0.00
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+########decided to process the samples again with spades version 3.13.0 and 30 threads HAHA########
+#david's env
+SPAdes version: 3.13.0
+Python version: 3.8.2
+OS: Linux-4.18.0-193.el8.x86_64-x86_64-with-glibc2.10
+
+#download spades 3.13.0
+conda create -n spades-3.13.0 python=3.8.2
+conda activate spades-3.13.0
+conda install -c "bioconda/label/cf201901" spades
+
+###workplace, download raw data
+$WORK/database/
+mkdir 20230727
+cp ./20230720/2306* ./20230727
+cp 20220922/220800001119-DS32_22Aug1119-DL032_S32* ./20230727
+cp 20230419/2303* ./20230727
+cd $WORK/database/20230727
+
+
+for i in *R1*gz
+do 
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J trimmomatic -o trim.out -e trim.err -n 30 --wrap="trimmomatic PE -threads 30 $R1 $R2 paired-$R1 unpaired-paired-$R1 paired-$R2 unpaired-$R2 ILLUMINACLIP:$HOME/anaconda3/envs/trimmomatic/share/trimmomatic-0.39-2/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:25:30 MINLEN:50"
+done
+
+conda activate spades-3.13.0
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J spades -o spades.out -e spades.err -n 30 --wrap="spades.py --sc -m 100 --pe1-1 paired-$R1 --pe1-2 paired-$R2 -o spades.$filestem -t 32 -k 21,33,55,77,99,127"
+done
+
+conda activate anvio-7.1
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J reformat -o reform.out -e reform.err -n 30 --wrap="anvi-script-reformat-fasta -l 5000 --simplify-names --prefix c -o spades.$filestem/5k.contigs.fasta spades.$filestem/contigs.fasta"
+done
+
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J bowtiebuilding -o bowtiebuilding.out -e bowtiebuilding.err -n 30 --wrap="bowtie2-build spades.$filestem/5k.contigs.fasta spades.$filestem/5k.contigs.fasta.bowtie.db"
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J mapping -o mapping.out -e mapping.err -n 30 --wrap="bowtie2 --threads 30 -x spades.$filestem/5k.contigs.fasta.bowtie.db -1 paired-$R1 -2 paired-$R2 --no-unal -S spades.$filestem/5k.contigs.fasta.bowtie.db.sam"
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 4:00:00 --mem=100000 -J anvi-init-bam -o anvi-init-bam.out -e anvi-init-bam.err -n 30 --wrap="anvi-init-bam -o spades.$filestem/5k.contigs.fasta.bowtie.db.sam.bam spades.$filestem/5k.contigs.fasta.bowtie.db.sam"
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 24:00:00 --mem=100000 -J dbgen -o dbgen.out -e dbgen.err -n 1 --wrap="anvi-gen-contigs-database -f spades.$filestem/5k.contigs.fasta -o spades.$filestem/5k.contigs.fasta.db -n $filestem"
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 24:00:00 --mem=100000 -J hmm -o hmm.out -e hmm.err -n 30 --wrap="anvi-run-hmms --just-do-it -c spades.$filestem/5k.contigs.fasta.db --num-threads 30"
+done
+
+for i in `ls *R1*gz | grep -v paired`
+do
+filestem=`basename $i _R1_001.fastq.gz`
+R1=$filestem"_R1_001.fastq.gz"
+R2=$filestem"_R2_001.fastq.gz"
+sbatch -p cluster -t 24:00:00 --mem=100000 -J profile -o profile.out -e profile.err -n 1 --wrap="anvi-profile -i spades.$filestem/5k.contigs.fasta.bowtie.db.sam.bam -c spades.$filestem/5k.contigs.fasta.db -T 30 -M 1000 --cluster-contigs -o spades.$filestem/5k.contigs.fasta.db.sam.bam_profile"
+done
+
+#Bin_32a
+#many high quality bac genomes
+anvi-interactive -p ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/5k.contigs.fasta.db --server-only -P 8080
+97.4/1.3/1.62M
+anvi-summarize -c ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/5k.contigs.fasta.db \
+-p ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.220800001119-DS32_22Aug1119-DL032_S32_L001/SUMMARY \
+-C default
+cp spades.220800001119-DS32_22Aug1119-DL032_S32_L001/SUMMARY/bin_by_bin/Bin_32a/Bin_32a-contigs.fa ./archaea_bins/
+
+
+
+#Bin_571-38
+#is it one? or two archaea/?
+1.39M? or 
+anvi-interactive -p ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/5k.contigs.fasta.db --server-only -P 8080
+96.1/1.3/1.34M
+anvi-summarize -c ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/5k.contigs.fasta.db \
+-p ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230300000400-DS27.23Mar400-DL027_S27_L001/SUMMARY \
+-C default
+cp spades.230300000400-DS27.23Mar400-DL027_S27_L001/SUMMARY/bin_by_bin/Bin_571-38/Bin_571-38-contigs.fa archaea_bins
+
+#bin_6a
+anvi-interactive -p ./spades.230600001074-DS201_23Jun1074-DL201_S201_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS201_23Jun1074-DL201_S201_L001/5k.contigs.fasta.db --server-only -P 8080
+97.4/1.3/1.54M
+anvi-summarize -c ./spades.230600001074-DS201_23Jun1074-DL201_S201_L001/5k.contigs.fasta.db \
+-p ./spades.230600001074-DS201_23Jun1074-DL201_S201_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230600001074-DS201_23Jun1074-DL201_S201_L001/SUMMARY \
+-C default
+cp spades.230600001074-DS201_23Jun1074-DL201_S201_L001/SUMMARY/bin_by_bin/Bin_6a/Bin_6a-contigs.fa ./archaea_bins/
+
+#bin_7a
+anvi-interactive -p ./spades.230600001074-DS202_23Jun1074-DL202_S202_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS202_23Jun1074-DL202_S202_L001/5k.contigs.fasta.db --server-only -P 8080
+89.5/1.3/1.68M
+anvi-summarize -c ./spades.230600001074-DS202_23Jun1074-DL202_S202_L001/5k.contigs.fasta.db \
+-p ./spades.230600001074-DS202_23Jun1074-DL202_S202_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230600001074-DS202_23Jun1074-DL202_S202_L001/SUMMARY \
+-C default
+cp spades.230600001074-DS202_23Jun1074-DL202_S202_L001/SUMMARY/bin_by_bin/Bin_7a/Bin_7a-contigs.fa archaea_bins
+
+#bin_54a
+anvi-interactive -p ./spades.230600001074-DS203_23Jun1074-DL203_S203_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS203_23Jun1074-DL203_S203_L001/5k.contigs.fasta.db --server-only -P 8080
+92.1/1.3/1.19M
+anvi-summarize -c ./spades.230600001074-DS203_23Jun1074-DL203_S203_L001/5k.contigs.fasta.db \
+-p ./spades.230600001074-DS203_23Jun1074-DL203_S203_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230600001074-DS203_23Jun1074-DL203_S203_L001/SUMMARY \
+-C default
+cp spades.230600001074-DS203_23Jun1074-DL203_S203_L001/SUMMARY/bin_by_bin/Bin_54a/Bin_54a-contigs.fa archaea_bins/
+
+#bin_571-39
+anvi-interactive -p ./spades.230600001074-DS204_23Jun1074-DL204_S204_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS204_23Jun1074-DL204_S204_L001/5k.contigs.fasta.db --server-only -P 8080
+90.8/1.3/1.46M
+anvi-summarize -c ./spades.230600001074-DS204_23Jun1074-DL204_S204_L001/5k.contigs.fasta.db \
+-p ./spades.230600001074-DS204_23Jun1074-DL204_S204_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230600001074-DS204_23Jun1074-DL204_S204_L001/SUMMARY \
+-C default
+cp spades.230600001074-DS204_23Jun1074-DL204_S204_L001/SUMMARY/bin_by_bin/Bin_571-39/Bin_571-39-contigs.fa archaea_bins/
+
+#bin_68KS
+anvi-interactive -p ./spades.230600001074-DS205_23Jun1074-DL205_S205_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS205_23Jun1074-DL205_S205_L001/5k.contigs.fasta.db --server-only -P 8080
+94.7/1.3/1.83M
+anvi-summarize -c ./spades.230600001074-DS205_23Jun1074-DL205_S205_L001/5k.contigs.fasta.db \
+-p ./spades.230600001074-DS205_23Jun1074-DL205_S205_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230600001074-DS205_23Jun1074-DL205_S205_L001/SUMMARY \
+-C default
+cp spades.230600001074-DS205_23Jun1074-DL205_S205_L001/SUMMARY/bin_by_bin/Bin_68KS/Bin_68KS-contigs.fa archaea_bins/
+
+#Bin_7KS_2nd
+anvi-interactive -p ./spades.230600001074-DS206_23Jun1074-DL206_S206_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS206_23Jun1074-DL206_S206_L001/5k.contigs.fasta.db --server-only -P 8080
+96.1/1.3/1.71M
+anvi-summarize -c ./spades.230600001074-DS206_23Jun1074-DL206_S206_L001/5k.contigs.fasta.db \
+-p ./spades.230600001074-DS206_23Jun1074-DL206_S206_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230600001074-DS206_23Jun1074-DL206_S206_L001/SUMMARY \
+-C default
+cp spades.230600001074-DS206_23Jun1074-DL206_S206_L001/SUMMARY/bin_by_bin/Bin_7KS/Bin_7KS-contigs.fa archaea_bins/
+
+#Bin_571-17
+anvi-interactive -p ./spades.230600001074-DS208_23Jun1074-DL208_S208_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS208_23Jun1074-DL208_S208_L001/5k.contigs.fasta.db --server-only -P 8080
+90.8/2.6/1.38M
+anvi-summarize -c ./spades.230600001074-DS208_23Jun1074-DL208_S208_L001/5k.contigs.fasta.db \
+-p ./spades.230600001074-DS208_23Jun1074-DL208_S208_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230600001074-DS208_23Jun1074-DL208_S208_L001/SUMMARY \
+-C default
+cp spades.230600001074-DS208_23Jun1074-DL208_S208_L001/SUMMARY/bin_by_bin/Bin_571-17/Bin_571-17-contigs.fa archaea_bins/
+
+#580-32
+anvi-interactive -p ./spades.230600001074-DS219_23Jun1074-DL219_S219_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db -c ./spades.230600001074-DS219_23Jun1074-DL219_S219_L001/5k.contigs.fasta.db --server-only -P 8080
+97.4/2.6/1.56M
+anvi-summarize -c ./spades.230600001074-DS219_23Jun1074-DL219_S219_L001/5k.contigs.fasta.db \
+-p ./spades.230600001074-DS219_23Jun1074-DL219_S219_L001/5k.contigs.fasta.db.sam.bam_profile/PROFILE.db \
+-o ./spades.230600001074-DS219_23Jun1074-DL219_S219_L001/SUMMARY \
+-C default
+cp spades.230600001074-DS219_23Jun1074-DL219_S219_L001/SUMMARY/bin_by_bin/Bin_580-32/Bin_580-32-contigs.fa archaea_bins/
+
+
+###checkm
+checkm lineage_wf -x fa ./archaea_bins ./archaea_bins/checkm.out
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Bin Id                               Marker lineage    # genomes   # markers   # marker sets   0     1    2   3   4   5+   Completeness   Contamination   Strain heterogeneity  
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Bin_6a-contigs                     k__Archaea (UID2)      207         145           103        0    144   1   0   0   0       100.00           0.97               0.00          
+  Bin_7KS-contigs                    k__Archaea (UID2)      207         145           103        1    143   1   0   0   0       99.51            0.97               0.00          
+  Bin_580-32-contigs                 k__Archaea (UID2)      207         145           103        1    143   1   0   0   0       99.03            0.97               0.00          
+  Bin_32a-contigs                    k__Archaea (UID2)      207         145           103        1    143   1   0   0   0       99.03            0.97               0.00          
+  Bin_7a-contigs                     k__Archaea (UID2)      207         145           103        6    138   1   0   0   0       97.33            0.97               0.00          
+  Bin_68KS-contigs                   k__Archaea (UID2)      207         145           103        3    141   1   0   0   0       97.09            0.97               0.00          
+  Bin_571-38-contigs                 k__Archaea (UID2)      207         145           103        4    141   0   0   0   0       97.09            0.00               0.00          
+  metabat.KBP569_Feb_25m_nospike.7   k__Archaea (UID2)      207         145           103        5    137   3   0   0   0       96.12            2.27              66.67          
+  Bin_571-39-contigs                 k__Archaea (UID2)      207         145           103        10   134   1   0   0   0       92.23            0.97              100.00         
+  Bin_571-17-contigs                 k__Archaea (UID2)      207         145           103        12   132   1   0   0   0       91.26            0.97              100.00         
+  BB04_55m_spike_121_1-contigs       k__Archaea (UID2)      207         145           103        11   134   0   0   0   0       90.78            0.00               0.00          
+  Bin_54a-contigs                    k__Archaea (UID2)      207         145           103        12   133   0   0   0   0       89.32            0.00               0.00          
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+cat archaea_bins/checkm.out/storage/bin_stats.analyze.tsv | sed "s/{'Translation table': //g" | sed "s/, 'GC std': /\t/" | sed "s/, '# ambiguous bases': /\t/g" | sed "s/, 'Genome size': /\t/g" | sed "s/, 'Longest contig': /\t/g" | sed "s/, 'N50 (scaffolds)': /\t/g" | sed "s/, 'Mean scaffold length': /\t/g" | sed "s/, '# contigs': /\t/g" | sed "s/, '# scaffolds': /\t/g" | sed "s/, '# predicted genes': /\t/g" | sed "s/, 'Longest scaffold': /\t/g" | sed "s/, 'GC': /\t/g" | sed "s/, 'N50 (contigs)': /\t/g" | sed "s/, 'Coding density': /\t/g" | sed "s/, 'Mean contig length': /\t/g" | sed "s/{'GC': /\t/g" | sed "s/, 'Translation table': /\t/g" | cut -f1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+
+
+checkm2 predict --threads 30 -x fa --force --input ./archaea_bins --output-directory ./archaea_bins/checkm2.out 
+
+
+
+eggnogs
+head . | grep oneoftheheader | sed 's/\t/\n/g' |grep -n "myinterest"
+
+
+
+
+#papers
+david needham comchoano methods
+
+
+###gtdb-tk
+conda activate mamba
+mamba create -n gtdbtk-2.1.1 -c conda-forge -c bioconda gtdbtk=2.1.1
+conda activate gtdbtk-2.1.1
+nohup download-db.sh &
+#database dir '/gxfs_home/geomar/smomw536/miniconda3/envs/gtdbtk-2.1.1/share/gtdbtk-2.1.1/db/gtdbtk_r207_v2_data.tar.gz'
+
+###eggNOG(2.1.11)
+conda create -n eggnog-mapper-2.1.11
+conda activate eggnog-mapper-2.1.11
+conda install -c bioconda eggnog-mapper
+
+export PATH=/home/user/eggnog-mapper:/home/user/eggnog-mapper/eggnogmapper/bin:"$PATH"
+export PATH=/gxfs_home/geomar/smomw536/miniconda3/envs/eggnog-mapper-2.1.11:/gxfs_home/geomar/smomw536/miniconda3/envs/eggnog-mapper-2.1.11/bin:"$PATH"
+
+export EGGNOG_DATA_DIR=/gxfs_work1/geomar/smomw536/databases/eggnog-mapper-data
+
+
+
+
+c__Nitrososphaeria; o__Nitrososphaerales; f__Nitrosopumilaceae; g__Nitrosopumilus; 
+
+
+
+gtt-get-accessions-from-GTDB -t Nitrososphaeria --GTDB-representatives-only
+gtt-get-accessions-from-GTDB -t Nitrososphaerales --GTDB-representatives-only
+gtt-get-accessions-from-GTDB -t Nitrosopumilaceae --GTDB-representatives-only
+gtt-get-accessions-from-GTDB -t Nitrosopumilus --GTDB-representatives-only
+
+GToTree -f list.of.mags -a GTDB-Nitrosopumilaceae-family-GTDB-rep-accs.txt -H Archaea -D -j 4
+GToTree -f list.of.mags -a GTDB-Nitrosopumilus-genus-GTDB-rep-accs.txt -H Archaea -D -j 2 &
+GToTree -f list.of.mags -a GTDB-Nitrososphaerales-order-GTDB-rep-accs.txt -H Archaea -D -j 2 &
+GToTree -f list.of.mags -a GTDB-Nitrososphaeria-class-GTDB-rep-accs.txt -H Archaea -D -j 2 &
+
+
+GTDB-Nitrosopumilaceae-family-GTDB-rep-accs.txt
+GTDB-Nitrosopumilus-genus-GTDB-rep-accs.txt
+GTDB-Nitrososphaerales-order-GTDB-rep-accs.txt
+GTDB-Nitrososphaeria-class-GTDB-rep-accs.txt
+
+
+grep "type strain of species" GTDB-Nitrosopumilus-genus-GTDB-rep-metadata.tsv
+
+
+#type strains in the genus nitrosopumilus
+(gtotree) [smomw536@nesh-fe3 ref_bins]$ grep "type strain of species" GTDB-Nitrosopumilus-genus-GTDB-rep-metadata.tsv | cut -f1,2,3,4,5,6,7,8,9
+GB_GCA_022117465.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus limneticus	0.0
+RS_GCF_000018465.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus maritimus	0.0
+RS_GCF_000242875.2	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus salaria	4.0
+RS_GCF_000299365.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus koreensis	0.0
+RS_GCF_000299395.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus sediminis	0.0
+RS_GCF_000875775.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus piranensis	0.0
+RS_GCF_000956175.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus adriaticus	0.0
+RS_GCF_002156965.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus catalinensis	0.0
+RS_GCF_003175215.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus zosterae	0.0
+RS_GCF_013407145.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus cobalaminigenes	0.0
+RS_GCF_013407165.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus oxyclinae	0.0
+RS_GCF_013407185.1	Archaea	Thermoproteota	Nitrososphaeria	Nitrososphaerales	Nitrosopumilaceae	Nitrosopumilus	Nitrosopumilus ureiphilus	0.0
+
+
+conda activate gtotree
+conda install -c bioconda ncbi-genome-download
+
+
+
+
+#ncbi-genome-download-0.3.2
+#usage: ncbi-genome-download [-h] [-s {refseq,genbank}] [-F FILE_FORMATS] [-l ASSEMBLY_LEVELS] [-g GENERA] [--genus GENERA] [--fuzzy-genus] [-S STRAINS] [-T SPECIES_TAXIDS] [-t TAXIDS] [-A ASSEMBLY_ACCESSIONS]
+                            [--fuzzy-accessions] [-R REFSEQ_CATEGORIES] [--refseq-category REFSEQ_CATEGORIES] [-o OUTPUT] [--flat-output] [-H] [-P] [-u URI] [-p N] [-r N] [-m METADATA_TABLE] [-n] [-N] [-v] [-d]
+                            [-V] [-M TYPE_MATERIALS]
+                            groups
+#ncbi-genome-download bacteria --accessions GCF_000001405.39,GCF_000005845.2 --format fasta --output-folder /path/to/output_folder
+
+ncbi-genome-download archaea -A GCA_022117465.1,GCF_000018465.1,GCF_000242875.2,GCF_000299365.1,GCF_000299395.1,GCF_000875775.1,GCF_000956175.1,GCF_002156965.1,GCF_003175215.1,GCF_013407145.1,GCF_013407165.1,GCF_013407185.1 -F fasta -o type_genus_nitrosopumilus
+
+
+GCA_022117465.1,GCF_000018465.1,GCF_000242875.2,GCF_000299365.1,GCF_000299395.1,GCF_000875775.1,GCF_000956175.1,GCF_002156965.1,GCF_003175215.1,GCF_013407145.1,GCF_013407165.1,GCF_013407185.1
+
+GCF_000018465.1  GCF_000242875.2  GCF_000299365.1  GCF_000299395.1  GCF_000875775.1  GCF_000956175.1  GCF_002156965.1  GCF_003175215.1  GCF_013407145.1  GCF_013407165.1  GCF_013407185.1
+
+
+
+
+
+cp type_genus_nitrosopumilus/refseq/archaea/*/*gz
+  995  gunzip *gz
+   997  head *fna
+  998  grep -c ">" *fna
+  999  head -1 GCF_000242875.2_ASM24287v3_genomic.fna
+ 1000  head -1 GCF_003175215.1_ASM317521v1_genomic.fna
+ 
+(gtotree) [smomw536@nesh-fe3 ref_bins]$ grep -c ">" *fna
+GCF_000018465.1_ASM1846v1_genomic.fna:1
+GCF_000242875.2_ASM24287v3_genomic.fna:171
+GCF_000299365.1_ASM29936v1_genomic.fna:1
+GCF_000299395.1_ASM29939v1_genomic.fna:1
+GCF_000875775.1_ASM87577v1_genomic.fna:1
+GCF_000956175.1_ASM95617v1_genomic.fna:1
+GCF_002156965.1_ASM215696v1_genomic.fna:1
+GCF_003175215.1_ASM317521v1_genomic.fna:14
+GCF_013407145.1_ASM1340714v1_genomic.fna:1
+GCF_013407165.1_ASM1340716v1_genomic.fna:1
+GCF_013407185.1_ASM1340718v1_genomic.fna:1
+
+# mv GCF_002156965.1_ASM215696v1_genomic.fna Nitrosopumilus_zosterae.fna
+
+####################################20230731 pangenomics###########
+#reformat fasta file
+#My bins are already in the format
+#reformating reference genomes
+for i in `ls *fna`
+do
+anvi-script-reformat-fasta $i \
+                           -o $i.fa \
+                           --prefix c \
+                           --simplify-names
+done
+
+#generate database
+ls *fa >genomes.txt
+
+for i in $(cat genomes.txt)
+do
+sbatch -p cluster -t 4:00:00 --mem=100000 -J dgen -o dgen.out -e dgen.err -n 30 --wrap="anvi-gen-contigs-database -f $i -o $i.db -n $i"
+done
+
+##external_genomes.txt and manually deleted some of genomes that we will not use 
+anvi-script-gen-genomes-file --input-dir . --output-file external_genomes.txt --include-subdirs
+ 
+#for creating an external genomes storage
+usage: anvi-gen-genomes-storage [-h] [-e FILE_PATH] [-i FILE_PATH]
+                                -o genome_storage.db
+
+sbatch -p cluster -t 4:00:00 --mem=100000 -J gengdb -o gengdb.out -e gengdb.err -n 30 --wrap="anvi-gen-genomes-storage -e external_genomes.txt -o first-GENOMES.db"
+
+########needed to add some attributes to the db file #####
+cat external_genomes.txt | cut -d '/' -f 7 > databases.txt
+
+#hmm 
+for i in `cat databases.txt`
+do
+sbatch -p cluster -t 24:00:00 --mem=100000 -J hmm -o hmm.out -e hmm.err -n 30 --wrap="anvi-run-hmms -c $i --num-threads 30"
+done
+
+#anvi-run-scg-taxonomy (which associates its single-copy core gene with taxonomic data)
+for i in `cat databases.txt`
+do
+sbatch -p cluster -t 24:00:00 --mem=100000 -J scg -o scg.out -e scg.err -n 30 --wrap="anvi-run-scg-taxonomy -c $i --num-threads 30"
+done
+
+#anvi-scan-trnas (which identifies the tRNA genes)
+
+
+#anvi-run-ncbi-cogs (which tries to assign functions to your genes using the COGs database)
+#gxfs_home/geomar/smomw536/miniconda3/envs/anvio-7.1/lib/python3.6/site-packages/anvio/data/misc/COG
+for i in `cat databases.txt`
+do
+sbatch -p cluster -t 24:00:00 --mem=100000 -J cogs -o cogs.out -e cogs.err -n 30 --wrap="anvi-run-ncbi-cogs -c $i --num-threads 30"
+done
+
+
+#### ??? optional ??/ maybe later?? anvi-run-kegg-kofams -c contigs-db
+
+#####
+
+sbatch -p cluster -t 4:00:00 --mem=100000 -J gengdb -o gengdb.out -e gengdb.err -n 30 --wrap="anvi-gen-genomes-storage -e external_genomes.txt -o first-GENOMES.db --debug"
+
+
+
+
+##anvi-pan-genome
+anvi-pan-genome -g PROCHLORO-GENOMES.db \
+                --project-name "Prochlorococcus_Pan" \
+                --output-dir PROCHLORO \
+                --num-threads 6 \
+                --minbit 0.5 \
+                --mcl-inflation 10 \ defult =2 , goes higher when ur genomes are similar 
+                --use-ncbi-blast
+
+anvi-pan-genome -g PROCHLORO-GENOMES.db \
+                --project-name "Prochlorococcus_Pan" \
+                --output-dir PROCHLORO \
+                --num-threads 6 \
+                --minbit 0.5 \
+                --mcl-inflation 10 \
+                --use-ncbi-blast
+

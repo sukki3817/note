@@ -406,3 +406,33 @@ scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/2023072
 
 
 scp sulky231@nesh-fe.rz.uni-kiel.de:/gxfs_work1/cau/sulky231/data_analysis/BB04_55m_spike_collection_w_clean_BB04_55m_spike_121/bin_by_bin/BB04_55m_spike_121_1/BB04_55m_spike_121_1-contigs.fa ./archaea_bins
+
+
+
+#from david
+##change checkm bin_stats.analyze.tsv file into a table
+cat checkm.out/storage/bin_stats.analyze.tsv | sed "s/{'Translation table': //g" | sed "s/, 'GC std': /\t/" | sed "s/, '# ambiguous bases': /\t/g" | sed "s/, 'Genome size': /\t/g" | sed "s/, 'Longest contig': /\t/g" | sed "s/, 'N50 (scaffolds)': /\t/g" | sed "s/, 'Mean scaffold length': /\t/g" | sed "s/, '# contigs': /\t/g" | sed "s/, '# scaffolds': /\t/g" | sed "s/, '# predicted genes': /\t/g" | sed "s/, 'Longest scaffold': /\t/g" | sed "s/, 'GC': /\t/g" | sed "s/, 'N50 (contigs)': /\t/g" | sed "s/, 'Coding density': /\t/g" | sed "s/, 'Mean contig length': /\t/g" | sed "s/{'GC': /\t/g" | sed "s/, 'Translation table': /\t/g" | cut -f1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+##
+cat spades.500.20.*/gtdb.metabat.bins.*/gtdbtk.ar53.summary.tsv | cut -f1,2 | grep c__Nitrososphaeria | cut -f1 > nitroso.bins
+grep -w -f nitroso.bins spades.500.20.*/checkm.metabat.bins.*/quality_report.tsv | sort -k2,2 -nr | cut -f2- -d ":" > checkm2.of.all.thaumarchaea.bins
+for i in `ls drep_out5/dereplicated_genomes/*fa | cut -f3 -d '/' | sed "s/\.fa//g"`; do grep -w $i checkm2.of.all.thaumarchaea.bins ; done
+ssh sulky231@nesh-fe.rz.uni-kiel.dea
+vooGh4huli
+scp drep_out5/dereplicated_genomes/metabat.BB04_55m_spike.121.fa drep_out5/dereplicated_genomes/metabat.KBP569_Feb_25m_nospike.7.fa smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230706mg/archaea_bins/
+
+
+#################################### idk ###### backup from a note###
+scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230706mg/archaea_bins/metabat.BB04_55m_spike.121.fa .
+
+
+#extract contigs larger than 5000 and do checkm from all bins
+cd $WORK/database/20230706mg/archaea_bins
+#following code extracts contigs >5000 but gave me an errer but it works.. idk
+for i in *fa
+do
+seqtk seq -A -L 5000 $i > 5000.$i
+done
+
+scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230706mg/archaea_bins/5000* .
+
+checkm 

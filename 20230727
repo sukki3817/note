@@ -357,6 +357,8 @@ GCF_013407185.1_ASM1340718v1_genomic.fna:1
 # mv GCF_002156965.1_ASM215696v1_genomic.fna Nitrosopumilus_zosterae.fna
 
 ####################################20230731 pangenomics###########
+mkdir 20230731
+
 #reformat fasta file
 #My bins are already in the format
 #reformating reference genomes
@@ -388,7 +390,7 @@ sbatch -p cluster -t 4:00:00 --mem=100000 -J gengdb -o gengdb.out -e gengdb.err 
 ########needed to add some attributes to the db file #####
 cat external_genomes.txt | cut -d '/' -f 7 > databases.txt
 
-#hmm 
+#hmm ƒ
 for i in `cat databases.txt`
 do
 sbatch -p cluster -t 24:00:00 --mem=100000 -J hmm -o hmm.out -e hmm.err -n 30 --wrap="anvi-run-hmms -c $i --num-threads 30"
@@ -429,11 +431,117 @@ anvi-pan-genome -g PROCHLORO-GENOMES.db \
                 --mcl-inflation 10 \ defult =2 , goes higher when ur genomes are similar 
                 --use-ncbi-blast
 
-anvi-pan-genome -g PROCHLORO-GENOMES.db \
-                --project-name "Prochlorococcus_Pan" \
-                --output-dir PROCHLORO \
-                --num-threads 6 \
+sbatch -p cluster -t 4:00:00 --mem=100000 -J panG -o panG.out -e panG.err -n 30 --wrap="anvi-pan-genome -g first-GENOMES.db \
+                --project-name "genus_type_strain" \
+                --output-dir . \
                 --minbit 0.5 \
                 --mcl-inflation 10 \
-                --use-ncbi-blast
+                --use-ncbi-blast"
+#error 
+# DATE: 01 Aug 23 02:02:04
+# CMD LINE: makeblastdb -in /gxfs_work1/geomar/smomw536/database/20230731/combined-aas.fa.unique -dbtype prot -out /gxfs_work1/geomar/smomw536/database/20230731/combined-aas.fa.unique
+makeblastdb: error while loading shared libraries: libnsl.so.1: cannot open shared object file: No such file or directory
+
+
+#(anvio-7.1) [smomw536@nesh-fe1 20230731]$ cat log.txt 
+#[01 Aug 23 10:37:39] Args .........................................: Namespace(align_with=None,
+                                                description=None, distance=None,
+                                                enforce_hierarchical_clustering=False,
+                                                exclude_partial_gene_calls=False,
+                                                genome_names=None,
+                                                genomes_storage='first-GENOMES.db',
+                                                linkage=None,
+                                                mcl_inflation=10.0,
+                                                min_occurrence=1,
+                                                min_percent_identity=0.0,
+                                                minbit=0.5, num_threads=1,
+                                                output_dir='.',
+                                                overwrite_output_destinations=False,
+                                                project_name='genus_type_strain',
+                                                quick_homogeneity=False,
+                                                sensitive=False,
+                                                skip_alignments=False,
+                                                skip_hierarchical_clustering=False,
+                                                skip_homogeneity=False,
+                                                use_ncbi_blast=True)
+
+sbatch -p cluster -t 4:00:00 --mem=100000 -J panG -o panG.out -e panG.err -n 30 --wrap="anvi-pan-genome -g first-GENOMES.db \
+                --project-name "second_trial_pangenome" \
+                --output-dir . \
+                --minbit 0.5 \
+                --mcl-inflation 10 \
+                --use-ncbi-blast \
+--num-threads 10"
+  #u should include --num-threads,,,, it takes time
+
+
+anvi-pan-genome -g first-GENOMES.db \
+                --project-name "david_pangenome_nonncbi" \
+                --output-dir davidoutnonncbi \
+                --minbit 0.5 \
+                --mcl-inflation 10 --num-threads 10
+
+
+
+#error 
+# DATE: 01 Aug 23 02:02:04
+# CMD LINE: makeblastdb -in /gxfs_work1/geomar/smomw536/database/20230731/combined-aas.fa.unique -dbtype prot -out /gxfs_work1/geomar/smomw536/database/20230731/combined-aas.fa.unique
+makeblastdb: error while loading shared libraries: libnsl.so.1: cannot open shared object file: No such file or directory
+
+#####hahahahaha solving...####
+(anvio-7.1) [smomw536@nesh-fe1 20230731]$ find $HOME -name "libnsl.so.1"
+/gxfs_home/geomar/smomw536/miniconda3/pkgs/sysroot_linux-64-2.17-h57e8cba_10/x86_64-conda-linux-gnu/sysroot/lib64/libnsl.so.1
+/gxfs_home/geomar/smomw536/miniconda3/envs/spades/x86_64-conda-linux-gnu/sysroot/lib64/libnsl.so.1
+/gxfs_home/geomar/smomw536/miniconda3/envs/anvio-7.1/x86_64-conda-linux-gnu/sysroot/lib64/libnsl.so.1
+
+(anvio-7.1) [smomw536@nesh-fe1 20230731]$ ldd /gxfs_home/geomar/smomw536/miniconda3/envs/anvio-7.1/x86_64-conda-linux-gnu/sysroot/lib64/libnsl.so.1
+	linux-vdso.so.1 (0x00007ffee1f37000)
+	libc.so.6 => /lib64/libc.so.6 (0x0000153596ac3000)
+	/lib64/ld-linux-x86-64.so.2 (0x000015359709f000)
+(anvio-7.1) [smomw536@nesh-fe1 20230731]$ find $HOME/miniconda3/envs/anvio-7.1 -name "makeblastdb"
+/gxfs_home/geomar/smomw536/miniconda3/envs/anvio-7.1/bin/makeblastdb
+(anvio-7.1) [smomw536@nesh-fe1 20230731]$ ldd /gxfs_home/geomar/smomw536/miniconda3/envs/anvio-7.1/bin/makeblastdb
+	linux-vdso.so.1 (0x00007fffc6bf2000)
+	libdl.so.2 => /lib64/libdl.so.2 (0x000014d1fce46000)
+	libnsl.so.1 => /lib64/libnsl.so.1 (0x000014d1fcc2d000)
+	librt.so.1 => /lib64/librt.so.1 (0x000014d1fca24000)
+	libpthread.so.0 => /lib64/libpthread.so.0 (0x000014d1fc804000)
+	libstdc++.so.6 => /gxfs_home/geomar/smomw536/miniconda3/envs/anvio-7.1/bin/../lib/libstdc++.so.6 (0x000014d1fd081000)
+	libm.so.6 => /lib64/libm.so.6 (0x000014d1fc482000)
+	libgomp.so.1 => /gxfs_home/geomar/smomw536/miniconda3/envs/anvio-7.1/bin/../lib/libgomp.so.1 (0x000014d1fc446000)
+	libgcc_s.so.1 => /gxfs_home/geomar/smomw536/miniconda3/envs/anvio-7.1/bin/../lib/libgcc_s.so.1 (0x000014d1fc42b000)
+	libc.so.6 => /lib64/libc.so.6 (0x000014d1fc069000)
+	/lib64/ld-linux-x86-64.so.2 (0x000014d1fd04a000)
+
+#solution from david... :/ he ran it at $HOME but i ran it again in the anvio-7.1 env
+module add blast-plus/2.9.0
+
+
+
+#Display
+anvi-display-pan -p second_trial_pangenome-PAN.db -g first-GENOMES.db --server-only -P 8080
+anvi-display-pan -p davidoutnonncbi/david_pangenome_nonncbi-PAN.db -g first-GENOMES.db --server-only -P 8081
+anvi-display-pan -p  davidout/david_pangenome-PAN.db -g first-GENOMES.db --server-only -P 8081
+
+#defalut6 bin storage, better scg single core genes that is geometric homogeneity index 1 and functional homogeneity <0.9
+$ anvi-get-sequences-for-gene-clusters -p PROCHLORO/Prochlorococcus_Pan-PAN.db \
+                                       -g PROCHLORO-GENOMES.db \
+                                       -C default -b Better_core \
+                                       --concatenate-gene-clusters \
+                                       -o better_core.fa
+
+
+anvi-compute-genome-similarity --external-genomes external_genomes.txt \
+                               --program pyANI \
+                               --output-dir ANI \
+                               --num-threads 6 \
+                               --pan-db davidout/david_pangenome-PAN.db
+
+anvi-summarize -p davidout/david_pangenome-PAN.db \
+                 -g first-GENOMES.db \
+                 -C default3 \
+                 -o SUMMARY_default3 --reformat-contig-names
+
+#download txt file (local computer ksookyoung/work/pangenomics)
+scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230731/SUMMARY_default3/david_pangenome_gene_clusters_summary.txt .
 

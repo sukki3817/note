@@ -545,3 +545,35 @@ anvi-summarize -p davidout/david_pangenome-PAN.db \
 #download txt file (local computer ksookyoung/work/pangenomics)
 scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230731/SUMMARY_default3/david_pangenome_gene_clusters_summary.txt .
 
+
+
+scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230731/*fa .
+
+
+#######20230803###
+cd 20230731
+##### eggnog emapper.py #####
+##database pathway##
+/gxfs_work1/geomar/smomw536/databases/eggnog-mapper-data
+export EGGNOG_DATA_DIR="/gxfs_work1/geomar/smomw536/databases/eggnog-mapper-data"
+#download manually
+>>http://eggnog5.embl.de/download/emapperdb-5.0.2/
+
+#emapper.py
+for i in `ls *fa`
+do
+sbatch -p cluster -t 24:00:00 --mem=100000 -J emap -o emap.out -e emap.err -n 30 --wrap="emapper.py -m diamond --itype genome --genepred prodigal \
+-i $i -o $i.eggnog"
+done
+#emap.err and emap.out are deleted :(
+
+#orthofinder download
+conda create -n orthofinder-2.5.5
+conda activate orthofinder-2.5.5
+conda install -c bioconda orthofinder
+
+
+#orthofinder (2.5.5)
+cp *genepred.fasta prot/seq
+sbatch -p cluster -t 24:00:00 --mem=100000 -J ortho -o ortho.out -e ortho.err -n 30 --wrap="orthofinder -f prot_seq"
+

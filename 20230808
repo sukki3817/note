@@ -1,0 +1,53 @@
+############ fastANI ###########
+#making a new dir and copy genomes 
+$WORK/database
+mkdir 20230808
+cd 20230808
+cp ../20230731/*fa .
+rm d*
+
+#change the file names 
+
+for i in `ls *`
+do
+    new_name="$i.eggnog.emapper.genepred"
+    mv "$i" "$new_name"
+done
+
+
+for i in `ls *-contigs.fa.eggnog.emapper.genepred`
+do
+new_name=$(echo "$i" | sed 's/-/./g')
+mv "$i" "$new_name"
+done
+
+
+#Running fastani many to many
+ls *genepred >list.txt
+fastANI --ql list.txt --rl list.txt -o fastani.cor.out
+
+#local computer
+scp smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230808/fastani.cor.out .
+
+#####merging with Orthogroups.GeneCount data#########
+#loaded to R and continue to work there
+#data loading
+fastani.cor <- read.delim("~/work/20230731/fastani.cor.out", header=FALSE)
+>   View(fastani.cor)
+#data editting
+colnames(fastani.cor)[colnames(fastani.cor) == "V1"] <- "Var1"
+colnames(fastani.cor)[colnames(fastani.cor) == "V2"] <- "Var2"
+class(correlations.2)
+class(fastani.cor)
+fastani.cor$V4 <- NULL
+fastani.cor$V5 <- NULL
+colnames(fastani.cor)[colnames(fastani.cor) == "V3"] <- "ANI"
+colnames(correlations.2)[colnames(correlations.2) == "value"] <- "cor"
+#merging dataframes
+merged <- merge(correlations.2, fastani.cor, by = c("Var1", "Var2"))
+#saving
+setwd("/Users/ksookyoung/work/20230731")
+save(merged, file = "fastani_cor.RData")
+
+#output saved at work/20230808/fastani.cor.RData
+

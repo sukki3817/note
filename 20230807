@@ -1,0 +1,111 @@
+## $WORK/database/20230731/ #####
+
+from david :)
+
+ls prot_seq/OrthoFinder/Results_Aug04/
+# Orthogroup/Genecount, searching the orthogroup has the most gene (total 140 genes in the orthogroup)
+ 1008  grep "OG0000000" *
+ 1009  grep "OG0000000" */*
+ 1010  grep "OG0000000" */*/*
+# get AA seq of the gene and ran ncbi blastp(on website)
+ 1015  grep -A 1 "c_000000000001_1508" *fasta
+ 1016  grep -A 5 "c_000000000001_1508" *fasta
+ 1017  grep -A 15 "c_000000000001_1508" *fasta
+ 1018* grep -A 15 "c_000000000016_14" *fasta 
+ 1019  grep -A 15 "c_000000000042_3" *fasta
+ 1020  grep -w -A 15 "c_000000000042_3" *fasta
+
+# compare all genes(AA) from two genomes with blastp, it automatically cut out low quality hits and low percentage hits
+##make a database of one of the genomes
+module add blast-plus/2.9.0
+makeblastdb -in Bin_571-38-contigs.fa.eggnog.emapper.genepred.fasta -out Bin_571-38-contigs.fa.eggnog.emapper.genepred.fasta.db -dbtype prot
+
+##running blastp, should differenciate query(AA) and database(AA.db), About -outfmt 6, => https://www.metagenomics.wiki/tools/blast/blastn-output-format-6
+ 1033  blastp -query Bin_68KS-contigs.fa.eggnog.emapper.genepred.fasta -db Bin_571-38-contigs.fa.eggnog.emapper.genepred.fasta.db -outfmt 6 -out blastp.results
+##sort by percentage of identical positions (pident)
+ 1035  sort -k3,3 -nr blastp.results | head
+##sort by bitscore (The higher the bit-score, the better the sequence similarity)
+ 1036  sort -k12,12 -nr blastp.results | head
+## sort by bitscore and call percentage of identity and bitscore
+ 1037  sort -k12,12 -nr blastp.results | cut -f3,12
+##awk data that has bitscore larger than 100 | sort by pident -n(numeric 1-100) -r (100-1)
+ 1043  awk '($12 + 0) > 100' blastp.results | sort -k3,3 -nr | head -400
+##awk data that has bitcore larger than 100 and pident larger than 97% and call the contig_protein name and make the txt file of it
+awk '($12 + 0) > 100' blastp.results | sort -k3,3 -nr | awk '($3 + 0) > 97' | cut -f1 > hits.to.db.greater.97
+
+c_000000000036_1
+
+## extracting certain protein sequences from a fasta file using seqtk
+seqtk subseq Bin_68KS-contigs.fa.eggnog.emapper.genepred.fasta hits.to.db.greater.97 
+
+## failed to download enveomics (for protein level comparison between genomes)
+git clone git://github.com/lmrodriguezr/enveomics.git enveomics
+
+## protein detection -output d.$i 
+for i in *fa; do prodigal -i $i -d d.$i & done
+
+## making a database of expected proteins nucleotide sequences
+makeblastdb -in d.Bin_571-38-contigs.fa -out d.Bin_571-38-contigs.fa.db -dbtype nucl
+##blastn 
+blastn -query d.Bin_68KS-contigs.fa -db d.Bin_571-38-contigs.fa.db -outfmt 6 -out blastp.results
+
+ 1081  awk '($12 + 0) > 100' blastp.results | wc -l
+ 1082  awk '($12 + 0) > 50' blastp.results | wc -l
+ 1083  head blastp.results
+ 1084  sort -k12,12 -nr blastp.results
+ 1085  sort -k12,12 -nr blastp.results | head
+ 1088  awk '($12 + 0) > 25' blastp.results | sort -k3,3 -nr | wc -l
+ 1089  awk '($12 + 0) > 25' blastp.results | sort -k3,3 -nr | cut -f3,12
+ 1090  sort -k12,12 -nr blastp.results
+ 1091  sort -k3,3 -nr blastp.results
+ 1092  awk '($12 + 0) > 25' blastp.results | sort -k3,3 -nr | cut -f3,12
+ 1093  grep "c_000000000014_50" blastp.results 
+ 1094  grep -A 1 "c_000000000014_50" d*fa
+ 1095  grep -A 10 "c_000000000014_50" d*68*fa
+ 1096  cd prot_seq/
+ 1097  grep -A 10 "c_000000000014_50" *68*fa
+ 1099  grep -A 10 "c_000000000014_50" *68*fasta
+ 1101  cat hits.to.db.greater.97 
+ 1103  awk '($12 + 0) > 25' blastp.results | sort -k3,3 -nr 
+
+
+ anvi-script-get-sequences-for-hmm-hits -c contigs.db -o 16S_sequences.fa --hmm-source Ribosomal_RNAs
+
+
+
+# R script for making heatmap from Orthogroups.GeneCount
+##removing the 'total' column
+> dim(Orthogroups.GeneCount)
+[1] 3046   25
+> Orthogroups.GeneCount.2 <- Orthogroups.GeneCount[,-25]
+
+## Heatmap R script
+heatmap3(cor(Orthogroups.GeneCount.2),scale='none')
+> cor(Orthogroups.GeneCount.2)
+
+> dim(cor(Orthogroups.GeneCount.2))
+[1] 24 24
+> as.vector((cor(Orthogroups.GeneCount.2)))
+
+> Orthogroups.GeneCount.vector <- data.frame(expand.grid(row.names(Orthogroups.GeneCount.2), colnames(Orthogroups.GeneCount.2)))
+> head(Orthogroups.GeneCount.vector)
+> dim(Orthogroups.GeneCount.vector)
+[1] 73104     2
+
+> correlations <- cor(Orthogroups.GeneCount.2)
+> head(correlations)
+> correlations.2 <- data.frame(expand.grid(row.names(correlations), colnames(correlations)))
+> head(correlations.2)
+> correlations.2$value <- as.vector(correlations)
+> head(correlations.2)
+> head(correlations.2,20)
+heatmap3(cor(Orthogroups.GeneCount.2,method='spearman'),scale='none')
+> ?cor
+> heatmap3(cor(Orthogroups.GeneCount.2,method='kendall'),scale='none')
+> 
+  > heatmap3(cor(Orthogroups.GeneCount.2,method='spearman'),scale='none')
+> heatmap3(cor(Orthogroups.GeneCount.2,method='pearson'),scale='none')
+> head(correlations.2)
+
+#correlation.2 file has combinations of genomes plus correlation value of each combination
+

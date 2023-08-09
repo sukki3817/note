@@ -1,0 +1,259 @@
+#### codes for analyzing eggnog mapper results ######
+#take every annotation files,
+  # using KEGG pathway code, grep proteins related with the pathway and make a new file that has information of the pathway from each annotation file
+    #
+
+for i in *tions
+do
+grep -c "ko00061" $i > ko.fattybiosyn.ko00061.$i.kegg
+grep -c "ko00071" $i > ko.fattydegrad.$i.kegg
+grep -c "ko00010" $i > ko.glycolysis.$i.kegg
+grep -c "ko00020" $i > ko.tca.$i.kegg
+grep -c "ko00970" $i > ko.trna.synthetase.$i.kegg
+grep -c "ko03030" $i > ko.dnarep.$i.kegg
+grep -c "ko03010" $i > ko.ribosomalprot.$i.kegg
+grep -c "ko00190" $i > ko.oxidative.phos.$i.kegg
+grep -c "ko00240" $i > ko.pyrimidine.$i.kegg
+grep -c "ko00230" $i > ko.purine.$i.kegg
+grep -c "ko01230" $i > ko.biosyn.aminoacid.$i.kegg
+grep -c "ko03440" $i > ko.recombination.$i.kegg
+grep -c "ko00030" $i > ko.ppp.$i.kegg
+grep -c "ko00540" $i > ko.LPS.$i.kegg
+grep -c "ko02030" $i > ko.chemotaxis.$i.kegg
+grep -c "ko02040" $i > ko.flagellar.$i.kegg
+grep -c "ko00730" $i > ko.thiamine.$i.kegg
+grep -c "ko00740" $i > ko.riboflavin.$i.kegg
+grep -c "ko00750" $i > ko.b6.$i.kegg
+grep -c "ko00780" $i > ko.biotin.$i.kegg
+grep -c "ko00790" $i > ko.folate.$i.kegg
+grep -c "ko00760" $i > ko.nicotinate.$i.kegg
+grep -c "ko00770" $i > ko.pantothenate.$i.kegg
+grep -c "ko03070" $i > ko.secretion.$i.kegg
+grep -c "ko00860" $i > ko.cobalamin.$i.kegg
+grep -c "tlc" $i > ko.tlc.$i.kegg
+egrep -c "Leucine rich|Leucine-rich" $i > ko.lrr.$i.kegg
+grep -c "Ankyrin repeat" $i > ko.ank.$i.kegg
+grep -c "hodopsin" $i > ko.rhod.$i.kegg
+egrep -c "crtB|crtI|crtL|crtZ" $i > ko.retinal.$i.kegg
+done
+cat ko.fattyb* > cat.ko.fattyb.kegg
+cat ko.fattydegrad* > cat.ko.fattydegrad.kegg
+cat ko.glycolysis* > cat.ko.glycolysis.kegg
+cat ko.tca* > cat.ko.tca.kegg
+cat ko.trna.synthetase* > cat.ko.trna.synthetase.kegg
+cat ko.dnarep* > cat.ko.dnarep.kegg
+cat ko.ribosomalprot* > cat.ko.ribosomalprot.kegg
+cat ko.oxidative.phos* > cat.ko.oxidative.phos.kegg
+cat ko.pyrimidine.* > cat.ko.pyrimidine.kegg
+cat ko.purine.* > cat.ko.purine.kegg
+cat ko.biosyn.aminoacid.* > cat.ko.biosyn.aminoacid.kegg
+cat ko.recombination.* > cat.ko.recombination.kegg
+cat ko.ppp.* > cat.ko.ppp.kegg
+cat ko.LPS.* > cat.ko.LPS.kegg
+cat ko.chemotaxis.* > cat.ko.chemotaxis.kegg
+cat ko.flagellar.* > cat.ko.flagellar.kegg
+cat ko.thiamine.* > cat.ko.thiamine.kegg
+cat ko.riboflavin.* > cat.ko.riboflavin.kegg
+cat ko.b6.* > cat.ko.b6.kegg
+cat ko.biotin.* > cat.ko.biotin.kegg
+cat ko.folate.* > cat.ko.folate.kegg
+cat ko.nicotinate.* > cat.ko.nicotinate.kegg
+cat ko.pantothenate.* > cat.ko.pantothenate.kegg
+cat ko.secretion.* > cat.ko.secretion.kegg
+cat ko.cobalamin.* > cat.ko.cobalamine.kegg
+cat ko.tlc.* > cat.ko.tlc.kegg
+cat ko.lrr.* > cat.ko.lrr.kegg
+cat ko.ank.* > cat.ko.ank.kegg
+cat ko.rhod* > cat.ko.rhod.kegg
+cat ko.retinal* > cat.ko.retinal.kegg
+ls *tions | sed 's/.fa.emapper.annotations//g' | sed 's/a\.//g' > row.names.for.pathway.counts.sum
+paste row.names.for.pathway.counts.sum cat.ko.*.kegg | grep -v "all.eggnog.annotations" | sed 's/eggnog.//g' | sed 's/eggnog.a.//g' | sed 's/^a.//g' | sort -k1,1 > all.kegg.stuff.boutique.from.eggnog.txt
+ls cat.ko.*.kegg | sed 's/cat.ko.//g' | sed 's/.kegg//g' | tr "\n" "\t" | sed 's/$/\n/g' | sed 's/^/\t/g' > pathway.headers.txt
+cat pathway.headers.txt all.kegg.stuff.boutique.from.eggnog.txt > sukki.eggnog.output.txt
+
+
+
+
+paste row.names.for.pathway.counts.sum cat.ko.*.kegg | sort -k1,1 
+paste row.names.for.pathway.counts.sum cat.ko.*.kegg | sed 's/.emapper.annotations//g'| sort -k1,1 > all.kegg.stuff.boutique.from.eggnog.txt
+
+#changing new line into tab 
+tr "\n" "\t"
+#adding tab in front the line
+sed 's/^/\t/g'
+    
+    
+mkdir kegg.out
+for i in `cut -f10 *tions | sed 's/,/\n/g' | grep ko | sort | uniq`
+do
+for j in *tions
+do
+grep -c $i $j > kegg.out/$i.$j
+done
+done
+for i in `cut -f10 *tions | sed 's/,/\n/g' | grep ko | sort | uniq`
+do
+cat kegg.out/$i.* > kegg.out/cat.ko.$i.kegg
+done
+paste kegg.out/cat.ko.*.kegg
+11:50
+curiously metabat.KBP569_Feb_25m_nospike.7 has the least genes associated with ko02030
+11:55
+ko02030 is highly variable in general
+새 항목
+
+
+Polyketide sugar unit biosynthesis 	ko00523 is variable
+
+#better way based on david but i hasn't tried   
+mkdir kegg.out
+for i in `cut -f10 *tions | sed 's/,/\n/g' | grep ko | sort | uniq`
+do
+for j in *tions
+do
+grep -c $i $j > kegg.out/$i.$j
+done
+done
+for i in `cut -f10 *tions | sed 's/,/\n/g' | grep ko | sort | uniq`
+do
+cat kegg.out/$i.* > kegg.out/cat.ko.$i.kegg
+done
+paste kegg.out/cat.ko.*.kegg
+
+
+
+
+
+
+cat ko.fattyb* |wc -l
+cat ko.fattydegrad* |wc -l
+cat ko.glycolysis* |wc -l
+cat ko.tca* |wc -l
+cat ko.trna.synthetase* |wc -l
+cat ko.dnarep* |wc -l
+cat ko.ribosomalprot* |wc -l
+cat ko.oxidative.phos* |wc -l
+cat ko.pyrimidine.* |wc -l
+cat ko.purine.* |wc -l
+cat ko.biosyn.aminoacid.* |wc -l
+cat ko.recombination.* |wc -l
+cat ko.ppp.* |wc -l
+cat ko.LPS.* |wc -l
+cat ko.chemotaxis.* |wc -l
+cat ko.flagellar.* |wc -l
+cat ko.thiamine.* |wc -l
+cat ko.riboflavin.* |wc -l
+cat ko.b6.* |wc -l
+cat ko.biotin.* |wc -l
+cat ko.folate.* |wc -l
+cat ko.nicotinate.* |wc -l
+cat ko.pantothenate.* |wc -l
+cat ko.secretion.* |wc -l
+cat ko.cobalamin.* |wc -l
+cat ko.tlc.* |wc -l
+cat ko.lrr.* |wc -l
+cat ko.ank.* |wc -l
+cat ko.rhod* |wc -l
+cat ko.retinal* |wc -l
+
+
+
+
+    i cant understand
+
+##take only this code from david's code
+for i in *tions
+do
+grep -c "ko00061" $i > ko.fattybiosyn.ko00061.$i.kegg
+grep -c "ko00071" $i > ko.fattydegrad.$i.kegg
+grep -c "ko00010" $i > ko.glycolysis.$i.kegg
+grep -c "ko00020" $i > ko.tca.$i.kegg
+grep -c "ko00970" $i > ko.trna.synthetase.$i.kegg
+grep -c "ko03030" $i > ko.dnarep.$i.kegg
+grep -c "ko03010" $i > ko.ribosomalprot.$i.kegg
+grep -c "ko00190" $i > ko.oxidative.phos.$i.kegg
+grep -c "ko00240" $i > ko.pyrimidine.$i.kegg
+grep -c "ko00230" $i > ko.purine.$i.kegg
+grep -c "ko01230" $i > ko.biosyn.aminoacid.$i.kegg
+grep -c "ko03440" $i > ko.recombination.$i.kegg
+grep -c "ko00030" $i > ko.ppp.$i.kegg
+grep -c "ko00540" $i > ko.LPS.$i.kegg
+grep -c "ko02030" $i > ko.chemotaxis.$i.kegg
+grep -c "ko02040" $i > ko.flagellar.$i.kegg
+grep -c "ko00730" $i > ko.thiamine.$i.kegg
+grep -c "ko00740" $i > ko.riboflavin.$i.kegg
+grep -c "ko00750" $i > ko.b6.$i.kegg
+grep -c "ko00780" $i > ko.biotin.$i.kegg
+grep -c "ko00790" $i > ko.folate.$i.kegg
+grep -c "ko00760" $i > ko.nicotinate.$i.kegg
+grep -c "ko00770" $i > ko.pantothenate.$i.kegg
+grep -c "ko03070" $i > ko.secretion.$i.kegg
+grep -c "ko00860" $i > ko.cobalamin.$i.kegg
+grep -c "tlc" $i > ko.tlc.$i.kegg
+egrep -c "Leucine rich|Leucine-rich" $i > ko.lrr.$i.kegg
+grep -c "Ankyrin repeat" $i > ko.ank.$i.kegg
+grep -c "rhodopsin" $i > ko.rhod.$i.kegg
+egrep -c "crtB|crtI|crtL|crtZ" $i > ko.retinal.$i.kegg
+done
+cat ko.fattyb* > cat.ko.fattyb.kegg
+cat ko.fattydegrad* > cat.ko.fattydegrad.kegg
+cat ko.glycolysis* > cat.ko.glycolysis.kegg
+cat ko.tca* > cat.ko.tca.kegg
+cat ko.trna.synthetase* > cat.ko.trna.synthetase.kegg
+cat ko.dnarep* > cat.ko.dnarep.kegg
+cat ko.ribosomalprot* > cat.ko.ribosomalprot.kegg
+cat ko.oxidative.phos* > cat.ko.oxidative.phos.kegg
+cat ko.pyrimidine.* > cat.ko.pyrimidine.kegg
+cat ko.purine.* > cat.ko.purine.kegg
+cat ko.biosyn.aminoacid.* > cat.ko.biosyn.aminoacid.kegg
+cat ko.recombination.* > cat.ko.recombination.kegg
+cat ko.ppp.* > cat.ko.ppp.kegg
+cat ko.LPS.* > cat.ko.LPS.kegg
+cat ko.chemotaxis.* > cat.ko.chemotaxis.kegg
+cat ko.flagellar.* > cat.ko.flagellar.kegg
+cat ko.thiamine.* > cat.ko.thiamine.kegg
+cat ko.riboflavin.* > cat.ko.riboflavin.kegg
+cat ko.b6.* > cat.ko.b6.kegg
+cat ko.biotin.* > cat.ko.biotin.kegg
+cat ko.folate.* > cat.ko.folate.kegg
+cat ko.nicotinate.* > cat.ko.nicotinate.kegg
+cat ko.pantothenate.* > cat.ko.pantothenate.kegg
+cat ko.secretion.* > cat.ko.secretion.kegg
+cat ko.cobalamin.* > cat.ko.cobalamine.kegg
+cat ko.tlc.* > cat.ko.tlc.kegg
+cat ko.lrr.* > cat.ko.lrr.kegg
+cat ko.ank.* > cat.ko.ank.kegg
+cat ko.rhod* > cat.ko.rhod.kegg
+cat ko.retinal* > cat.ko.retinal.kegg
+
+    cat.ko.*.kegg 
+##take the result, save it as csv file
+
+    ######asked smarter chatgpt
+    ## in R 
+# Read the data from the file
+data <- read.csv('input.txt', header=FALSE, stringsAsFactors=FALSE)
+
+# Convert the dataframe to a matrix and then transpose it
+mat <- matrix(data$V1, nrow=25, byrow=TRUE)
+transposed_mat <- t(mat)
+
+# Write the matrix to an output file
+write.csv(transposed_mat, 'kegg_table.txt', row.names=FALSE, quote=FALSE)
+
+##to the bash
+     scp kegg_table.txt smomw536@nesh-fe.rz.uni-kiel.de:/gxfs_work1/geomar/smomw536/database/20230731
+cat kegg_table.txt | tr ',' '\t' 
+
+
+    tr ',' '\t' < "$input_file" > "$output_file"
+
+
+
+for i in *tions
+do
+    grep -c "map00860" $i
+done
+    
+
+  

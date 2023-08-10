@@ -1,0 +1,12 @@
+#gtotree aiming to include all genomes i have
+
+mkdir 20230810
+cp all-genome-fasta-files . (24 genomes)
+
+#gtotree                   1.8.1                    py39_1    astrobiomike
+conda activate gtotree
+ls *fa >genome_list.txt
+
+GToTree -f genome_list.txt -H Archaea -j 4
+
+((((Bin_571-17-contigs:0.000000005,Bin_571-38-contigs:0.000063865)0.919:0.000065571,Bin_571-39-contigs:0.000000006)0.997:0.000893405,BB04_55m_spike_121_1-contigs:0.000108352)1.000:0.065226049,((((Candidatus_Nitrosomarinus_catalina_strain_SPOT01.fna:0.051906370,(metabat.KBP569_Feb_25m_nospike.7:0.066141522,Candidatus_Nitrosopumilus_limneticus_isolate.fna:0.069985872)0.957:0.015674303)1.000:0.085973241,(Bin_54a-contigs:0.146384918,(Nitrosopumilus_maritimus_SCM1.fna:0.040476926,(Candidatus_Nitrosopumilus_koreensis_AR1.fna:0.027216087,Nitrosopumilus_piranensis_strain_D3C.fna:0.027248993)1.000:0.011731897)1.000:0.031658057)1.000:0.025627895)0.918:0.016820456,(Nitrosopumilus_zosterae_strain_NBM25.fna:0.037865236,(Nitrosopumilus_ureiphilus_strain_PS0.fna:0.021107130,(Bin_68KS-contigs:0.018003816,Nitrosopumilus_adriaticus_strain_NF5.fna:0.024734051)1.000:0.016358868)1.000:0.009419818)1.000:0.032095297)0.999:0.014653277,Candidatus_Nitrosopumilus_salaria_BD31.fna:0.059877256)1.000:0.030327329,((Bin_6a-contigs:0.035723273,(Nitrosopumilus_cobalaminigenes_strain_HCA1.fna:0.037096632,((Bin_32a-contigs:0.005797401,Bin_580-32-contigs:0.003338227)1.000:0.034606525,(Nitrosopumilus_oxyclinae_strain_HCE1.fna:0.011670526,(Bin_7a-contigs:0.000065247,Bin_7KS-contigs:0.000000005)1.000:0.009389134)1.000:0.022290454)1.000:0.018350360)1.000:0.011948853)1.000:0.015374759,Candidatus_Nitrosopumilus_sediminis.fna:0.028509762)1.000:0.007927329);

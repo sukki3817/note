@@ -1,0 +1,11 @@
+#?
+https://www.biostars.org/p/80422/#google_vignette
+#pathway data
+http://www.genome.jp/kegg-bin/get_htext?ko00001.keg
+#david, not working perfectly
+grep "PATH" ko00001.keg | sed 's/:/\t/g' | sed "s/PATH//g" | cut -f6- -d ' '
+
+
+
+
+

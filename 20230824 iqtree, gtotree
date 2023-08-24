@@ -71,7 +71,7 @@ source ../download_fna_files.sh
 GToTree -f ricket_genomes_15sept2021_rickettsiales_drep_0.99.2_w_representativealphas.5.txt -H Alphaproteobacteria -d -n 2 -o ricket_genomes_15sept2021_rickettsiales_drep_0.99.2_w_representativealphas.txt.alpha.gtotree.iqtree.5 -T IQ-TREE
 GToTree -f list.of.mags -a GTDB-Nitrososphaeria-class-GTDB-rep-accs.txt -H Archaea -D -j 2 &
 
-sbatch -p cluster -t 8:00:00 --mem=100000 -J iqtree -o iqtree.out -e iqtree.err -n 30 --wrap="GToTree -f MAGs_list -a edited_filtered_genome -o iqtree_genus_plus -H Archaea -d -D -n 2 -T IQ-TREE"
+sbatch -p cluster -t 36:00:00 --mem=100000 -J iqtree -o iqtree.out -e iqtree.err -n 30 --wrap="GToTree -f MAGs_list -a edited_filtered_genome -o iqtree_genus_plus -H Archaea -d -D -n 6 -k -T IQ-TREE"
 GToTree -f MAGs_list -a edited_filtered_genome -o genus_plus_brevis_cenar -H Archaea -d -D -n 2
 
 

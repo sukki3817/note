@@ -1,0 +1,82 @@
+conda install -c bioconda iqtree
+
+
+# learning awk
+# https://linuxhint.com/parse_tab_delimited_file_using_awk/
+
+#working dir
+cd /gxfs_work1/geomar/smomw536/database/20230727/ref_bins/gtotree_family_tree
+
+# data trimming
+# searching which column is "perc_comp" column
+head -1 Genomes_summary_info.tsv | tr '\t' '\n' |grep -n "perc_comp"
+# calling the column 
+awk -F '\t' '{print $7}' Genomes_summary_info.tsv
+# calling the column with certain conditions and print the first column of the data (accession numbers), saving as a txt file
+awk -F'\t' '$7 >= 80 && $8 <= 5' Genomes_summary_info.tsv |awk -F '\t' '{print $1}' > filtered_genomes
+# calling only genomes from the database and save
+cat filtered_genomes |grep -E "GCA" >edited_filtered_genome
+
+
+#i did trimming with the family tree but i needed to do this with the genus tree. 
+#working dir
+cd $WORK/database/20230727/ref_bins/
+#data directory
+$WORK/database/20230727/ref_bins/genus/Genomes_summary_info.tsv
+
+awk -F'\t' '$7 >= 80 && $8 <= 5' $WORK/database/20230727/ref_bins/genus/Genomes_summary_info.tsv |awk -F '\t' '{print $1}' > filtered_genomes
+cat filtered_genomes |grep -E "GCA" >edited_filtered_genome
+
+#i am so confused, so i will draw genus tree first and then filter the data and add brevis and symbiont one
+conda activate gtotree
+
+GToTree -f MAGs_list -a GTDB-Nitrosopumilus-genus-GTDB-rep-accs.txt -o gtotree_genus_tree -F -H Archaea -D -j 2 &
+
+#  Input genome sources include:
+      - NCBI accessions listed in GTDB-Nitrosopumilus-genus-GTDB-rep-accs.txt (66 genomes)
+      - Fasta files listed in MAGs_list (7 genomes)
+                             Total input genomes: 73
+#filtering data
+awk -F'\t' '$7 >= 80 && $8 <= 5' $WORK/database/20230727/ref_bins/gtotree_genus_tree/Genomes_summary_info.tsv |awk -F '\t' '{print $1}' > filtered_genomes
+cat filtered_genomes |grep -E "GCA" >edited_filtered_genome
+
+#downloading genomes / not working 
+for i in `cat edited_filtered_genome`
+do
+ncbi-genome-download archaea -A GCA_000018465.1 -F fasta -o filtered_genus
+done
+
+ncbi-genome-download archaea -A edited_filtered_genome -F fasta -o filtered_genus
+
+# download genomes from ncbi, https://www.metagenomics.wiki/tools/fastq/ncbi-ftp-genome-download
+rsync -t -v rsync://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_genbank.txt ./
+cat assembly_summary_genbank.txt
+
+for i in `cat edited_filtered_genome`
+do
+grep "$i" assembly_summary_genbank.txt
+done
+
+#save the result >filtering
+cut -f 20 filtering > ftp_links.txt
+mkdir genus_genome
+cd genus_genome
+
+source ../download_fna_files.sh
+
+#####i succeeded to download genomes except some genomes dont have url .. 
+
+
+################GToTree have IQ tree option
+GToTree -f ricket_genomes_15sept2021_rickettsiales_drep_0.99.2_w_representativealphas.5.txt -H Alphaproteobacteria -d -n 2 -o ricket_genomes_15sept2021_rickettsiales_drep_0.99.2_w_representativealphas.txt.alpha.gtotree.iqtree.5 -T IQ-TREE
+GToTree -f list.of.mags -a GTDB-Nitrososphaeria-class-GTDB-rep-accs.txt -H Archaea -D -j 2 &
+
+sbatch -p cluster -t 8:00:00 --mem=100000 -J iqtree -o iqtree.out -e iqtree.err -n 30 --wrap="GToTree -f MAGs_list -a edited_filtered_genome -o iqtree_genus_plus -H Archaea -d -D -n 2 -T IQ-TREE"
+GToTree -f MAGs_list -a edited_filtered_genome -o genus_plus_brevis_cenar -H Archaea -d -D -n 2
+
+
+
+
+
+
+

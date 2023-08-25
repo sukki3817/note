@@ -67,16 +67,21 @@ source ../download_fna_files.sh
 #####i succeeded to download genomes except some genomes dont have url .. 
 
 
-################GToTree have IQ tree option
+################GToTree have IQ tree option, not working on slurm
 GToTree -f ricket_genomes_15sept2021_rickettsiales_drep_0.99.2_w_representativealphas.5.txt -H Alphaproteobacteria -d -n 2 -o ricket_genomes_15sept2021_rickettsiales_drep_0.99.2_w_representativealphas.txt.alpha.gtotree.iqtree.5 -T IQ-TREE
 GToTree -f list.of.mags -a GTDB-Nitrososphaeria-class-GTDB-rep-accs.txt -H Archaea -D -j 2 &
 
 sbatch -p cluster -t 36:00:00 --mem=100000 -J iqtree -o iqtree.out -e iqtree.err -n 30 --wrap="GToTree -f MAGs_list -a edited_filtered_genome -o iqtree_genus_plus -H Archaea -d -D -n 6 -k -T IQ-TREE"
 GToTree -f MAGs_list -a edited_filtered_genome -o genus_plus_brevis_cenar -H Archaea -d -D -n 2
 
+sbatch -p cluster -t 36:00:00 --mem=100000 -J iqtree -o iqtree2.out -e iqtree2.err -n 30 --wrap="GToTree -f MAGs_list -a edited_filtered_genome -o gtotree_checking_server -H Archaea -d -D -n 2"
 
+#worked, this tree doesnt include bb04 and 32
+nohup GToTree -f MAGs_list -a edited_filtered_genome -o iqtree_genus_plus -H Archaea -d -D -n 4 -k -T IQ-TREE &
 
-
-
+#tree including bb04 and 32
+nohup GToTree -f MAGs_list -a edited_filtered_genome -o iqtree_include_similar_genomes_20230825 -H Archaea -d -D -n 2 -k -T IQ-TREE & > log_file.log 2>&1 &
+[1] 3206806
+[2] 3206807
 
 

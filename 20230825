@@ -1,0 +1,46 @@
+#take summary result
+#take only unique proteins and annotate
+cd $WORK/database/20230731
+cat SUMMARY_default3/david_pangenome_gene_clusters_summary.txt | 
+
+head -1 SUMMARY_default3/david_pangenome_gene_clusters_summary.txt | tr '\t' '\n' |grep -n "bin_name"
+awk -F '\t' '{print $3}' SUMMARY_default3/david_pangenome_gene_clusters_summary.txt
+
+#3129 genes are unique
+awk -F'\t' '$3 == "Bin_unique"' SUMMARY_default3/david_pangenome_gene_clusters_summary.txt > "unique_genes"
+
+#this gives you COG annotation and COG pathway
+awk -F '\t' '{print $14, $15}' unique_genes
+
+#is there a unique gene duplicated?
+head -1 SUMMARY_default3/david_pangenome_gene_clusters_summary.txt | tr '\t' '\n' |grep -n "max_num_paralogs"
+awk -F '\t' '$8 != "1"' unique_genes
+
+#eggnog annatation of unique genes
+mkdir unique
+cd unique
+cp ../unique_genes .
+#need to make fasta file for emapper : 19
+head -1 ../SUMMARY_default3/david_pangenome_gene_clusters_summary.txt | tr '\t' '\n' |grep -n "aa_sequence"
+# add ">" in front of every line
+sed 's/^/>/' unique_genes > unique_genes_f
+
+# change 18th tab with a new line
+sed -E 's/(([^\t]*\t){17}[^\t]*)\t/\1\n/' unique_genes_f > unique_genes.fa
+# change all tab into |
+tr '\t' '|' < unique_genes.fa > unique_genes.fasta
+
+conda activate eggnog-mapper-2.1.11
+export EGGNOG_DATA_DIR="/gxfs_work1/geomar/smomw536/databases/eggnog-mapper-data"
+
+sbatch -p cluster -t 24:00:00 --mem=100000 -J emap2 -o emap2.out -e emap2.err -n 30 --wrap="emapper.py -m diamond -i unique_genes.fasta -o unique.eggnog"
+
+aa_sequence
+
+
+unique_id	gene_cluster_id	bin_name	genome_name	gene_callers_id	num_genomes_gene_cluster_has_hits	num_genes_in_gene_cluster	max_num_paralogs	SCG	functional_homogeneity_index	geometric_homogeneity_index	combined_homogeneity_index	COG20_CATEGORY_ACC	COG20_CATEGORY	COG20_FUNCTION_ACC	COG20_FUNCTION	COG20_PATHWAY_ACC	COG20_PATHWAY	aa_sequence
+1	GC_00000001	Bin_core	Bin_32a_657	1765	21	109	7	0	0.437685430617197	0.832930446438394	0.573834354987542	C	Energy production and conversion	COG3794	Plastocyanin (PetE) (PDB:3BQV)			-----------------------------------MKATLLLISAITALLFVSLAS------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------PSAFAQF-------------------------------------------------------QSGGVS--SDTIPKGS--TWYPGE---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------GLKQGDFFSYSMC-----------------YVDYKECTTFEMD--------------------------------------MWIKGDK--------------------------------------------------------------------------------------------------------------------------------------------------------QTGSES---VWLAEVAV-FDGNKI------------------------------------------------------------------------------------------------------------------IVGEM---------ELGKV---APEPT------------------------------------------------------------------GGSP--------------ELGLYRGAFK---------------------------------------SSVVWLSAFATANDDAYG----------------------------------------KGPKEFSATSWGKI------------------------------------------------------------------GNIGGEQVLPM--KIETITV----------------------PAG------TWETVQVGW--KTGGVTSKVWVV---DDFP----------------------------------------------------------------------------------------------------------------------------------------------------------------------------FPVKA-------------------------------------------KTYTH---VSEG-----------------IAPIEYEFV--------LLDHKENVQTSP---ITQYTSTESVFAGAGCETNFDKS--------------VSIKKPTHN-FDYQLN---------------------------------------------------------------------------IFYGPEDLVKGC----------------------------ETQWLIKFISKYD-----------DTEFLN-------------QVQYDFLVVDDNLTPLRS------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------IAQEEGRDFLYSP--SGLAILDFIVKED-PGTANYV--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------VWIYGLSP----------EGIVPN---VASDYIKI-------SVPIFASDGSTPVIIPDPAPQ-----------------------------------------------------------KI-----------------------------------------------------------------------------------------------------------------------------------PSW-IKNNAGWWAEG--------------------------AIDDSSFVQG----------------------------------IQFLIKEGIMKI-----PPTS--QGSSG------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------GSNEI-PS---------W--IKN-NAGWWAEGAIDDDSFVGGIQFLIEKGIM-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------RVSS--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+

@@ -1,0 +1,99 @@
+
+
+
+david needham
+  오전 11:21
+come by my office and i'll show you some sick code for processing the eggnog outputs
+11:22
+for i in *tions
+do
+grep -c "ko00061" $i > ko.fattybiosyn.ko00061.$i.kegg
+grep -c "ko00071" $i > ko.fattydegrad.$i.kegg
+grep -c "ko00010" $i > ko.glycolysis.$i.kegg
+grep -c "ko00020" $i > ko.tca.$i.kegg
+grep -c "ko00970" $i > ko.trna.synthetase.$i.kegg
+grep -c "ko03030" $i > ko.dnarep.$i.kegg
+grep -c "ko03010" $i > ko.ribosomalprot.$i.kegg
+grep -c "ko00190" $i > ko.oxidative.phos.$i.kegg
+grep -c "ko00240" $i > ko.pyrimidine.$i.kegg
+grep -c "ko00230" $i > ko.purine.$i.kegg
+grep -c "ko01230" $i > ko.biosyn.aminoacid.$i.kegg
+grep -c "ko03440" $i > ko.recombination.$i.kegg
+grep -c "ko00030" $i > ko.ppp.$i.kegg
+grep -c "ko00540" $i > ko.LPS.$i.kegg
+grep -c "ko02030" $i > ko.chemotaxis.$i.kegg
+grep -c "ko02040" $i > ko.flagellar.$i.kegg
+grep -c "ko00730" $i > ko.thiamine.$i.kegg
+grep -c "ko00740" $i > ko.riboflavin.$i.kegg
+grep -c "ko00750" $i > ko.b6.$i.kegg
+grep -c "ko00780" $i > ko.biotin.$i.kegg
+grep -c "ko00790" $i > ko.folate.$i.kegg
+grep -c "ko00760" $i > ko.nicotinate.$i.kegg
+grep -c "ko00770" $i > ko.pantothenate.$i.kegg
+grep -c "ko03070" $i > ko.secretion.$i.kegg
+grep -c "ko00860" $i > ko.cobalamin.$i.kegg
+grep -c "tlc" $i > ko.tlc.$i.kegg
+egrep -c "Leucine rich|Leucine-rich" $i > ko.lrr.$i.kegg
+grep -c "Ankyrin repeat" $i > ko.ank.$i.kegg
+grep -c "hodopsin" $i > ko.rhod.$i.kegg
+egrep -c "crtB|crtI|crtL|crtZ" $i > ko.retinal.$i.kegg
+done
+cat ko.fattyb* > cat.ko.fattyb.kegg
+cat ko.fattydegrad* > cat.ko.fattydegrad.kegg
+cat ko.glycolysis* > cat.ko.glycolysis.kegg
+cat ko.tca* > cat.ko.tca.kegg
+cat ko.trna.synthetase* > cat.ko.trna.synthetase.kegg
+cat ko.dnarep* > cat.ko.dnarep.kegg
+cat ko.ribosomalprot* > cat.ko.ribosomalprot.kegg
+cat ko.oxidative.phos* > cat.ko.oxidative.phos.kegg
+cat ko.pyrimidine.* > cat.ko.pyrimidine.kegg
+cat ko.purine.* > cat.ko.purine.kegg
+cat ko.biosyn.aminoacid.* > cat.ko.biosyn.aminoacid.kegg
+cat ko.recombination.* > cat.ko.recombination.kegg
+cat ko.ppp.* > cat.ko.ppp.kegg
+cat ko.LPS.* > cat.ko.LPS.kegg
+cat ko.chemotaxis.* > cat.ko.chemotaxis.kegg
+cat ko.flagellar.* > cat.ko.flagellar.kegg
+cat ko.thiamine.* > cat.ko.thiamine.kegg
+cat ko.riboflavin.* > cat.ko.riboflavin.kegg
+cat ko.b6.* > cat.ko.b6.kegg
+cat ko.biotin.* > cat.ko.biotin.kegg
+cat ko.folate.* > cat.ko.folate.kegg
+cat ko.nicotinate.* > cat.ko.nicotinate.kegg
+cat ko.pantothenate.* > cat.ko.pantothenate.kegg
+cat ko.secretion.* > cat.ko.secretion.kegg
+cat ko.cobalamin.* > cat.ko.cobalamine.kegg
+cat ko.tlc.* > cat.ko.tlc.kegg
+cat ko.lrr.* > cat.ko.lrr.kegg
+cat ko.ank.* > cat.ko.ank.kegg
+cat ko.rhod* > cat.ko.rhod.kegg
+cat ko.retinal* > cat.ko.retinal.kegg
+ls *tions | sed 's/.fa.emapper.annotations//g' | sed 's/a\.//g' > row.names.for.pathway.counts.sum
+paste row.names.for.pathway.counts.sum cat.ko.*.kegg | grep -v "all.eggnog.annotations" | sed 's/eggnog.//g' | sed 's/eggnog.a.//g' | sed 's/^a.//g' | sort -k1,1 > all.kegg.stuff.boutique.from.eggnog.txt
+ls cat.ko.*.kegg | sed 's/cat.ko.//g' | sed 's/.kegg//g' | tr "\n" "\t" | sed 's/$/\n/g' | sed 's/^/\t/g' > pathway.headers.txt
+cat pathway.headers.txt all.kegg.stuff.boutique.from.eggnog.txt > sukki.eggnog.output.txt
+11:22
+or just run that
+11:22
+on your annotations files
+11:23
+you may need to edit the sed at the bottom, but also it probably doesn't matter
+
+
+david needham
+  오전 11:49
+or
+11:50
+mkdir kegg.out
+for i in `cut -f10 *tions | sed 's/,/\n/g' | grep ko | sort | uniq`
+do
+for j in *tions
+do
+grep -c $i $j > kegg.out/$i.$j
+done
+done
+for i in `cut -f10 *tions | sed 's/,/\n/g' | grep ko | sort | uniq`
+do
+cat kegg.out/$i.* > kegg.out/cat.ko.$i.kegg
+done
+paste kegg.out/cat.ko.*.kegg

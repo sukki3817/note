@@ -1,0 +1,110 @@
+
+cd 20230810
+mkdir genome
+mv *fa genome
+mkdir gtdbtk
+conda activate gtdbtk 
+gtdbtk classify_wf --genome_dir genome -x fa --out_dir gtdbtk --cpus 2
+
+#error 
+##FutureWarning: In the future `np.bool` will be defined as the corresponding NumPy scalar.
+#fixing...
+(gtdbtk-2.1.1) [smomw536@nesh-fe1 20230810]$ conda update numpy
+############################################################################################
+Retrieving notices: ...working... done
+Collecting package metadata (current_repodata.json): done
+Solving environment: done
+
+
+==> WARNING: A newer version of conda exists. <==
+  current version: 23.7.1
+  latest version: 23.7.2
+
+Please update conda by running
+
+    $ conda update -n base -c conda-forge conda
+
+Or to minimize the number of packages updated during conda update use
+
+     conda install conda=23.7.2
+
+
+
+## Package Plan ##
+
+  environment location: /gxfs_home/geomar/smomw536/miniconda3/envs/gtdbtk-2.1.1
+
+  added / updated specs:
+    - numpy
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    boost-cpp-1.70.0           |       h8e57a91_2        21.1 MB  conda-forge
+    capnproto-0.10.4           |       h2d74bed_0         4.4 MB
+    gsl-2.6                    |       he838d99_2         3.2 MB  conda-forge
+    icu-64.2                   |       he1b5a44_1        12.6 MB  conda-forge
+    mash-2.3                   |       he348c14_1         584 KB  bioconda
+    tqdm-4.66.1                |     pyhd8ed1ab_0          87 KB  conda-forge
+    wheel-0.41.1               |     pyhd8ed1ab_0          56 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:        42.0 MB
+
+The following packages will be REMOVED:
+
+  lz4-c-1.9.3-h9c3ff4c_1
+  zstd-1.4.9-ha95c52a_0
+
+The following packages will be UPDATED:
+
+  capnproto          conda-forge::capnproto-0.10.2-h623969~ --> pkgs/main::capnproto-0.10.4-h2d74bed_0 
+  openssl                                 1.1.1u-hd590300_0 --> 3.1.2-hd590300_0 
+  python                          3.8.15-h257c98d_0_cpython --> 3.8.17-he550d4f_0_cpython 
+  tqdm                                  4.65.0-pyhd8ed1ab_1 --> 4.66.1-pyhd8ed1ab_0 
+  wheel                                 0.41.0-pyhd8ed1ab_0 --> 0.41.1-pyhd8ed1ab_0 
+
+The following packages will be DOWNGRADED:
+
+  boost-cpp                               1.70.0-h7b93d67_3 --> 1.70.0-h8e57a91_2 
+  gsl                                        2.7-he838d99_0 --> 2.6-he838d99_2 
+  icu                                       67.1-he1b5a44_0 --> 64.2-he1b5a44_1 
+  mash                                       2.3-hd3113c8_6 --> 2.3-he348c14_1 
+
+  ###############################################################################
+
+conda install numpy=1.23.5
+
+
+#fixed
+gtdbtk classify_wf --genome_dir genome -x fa --out_dir gtdbtk --cpus 2
+
+
+######fastani with metabat kbp569 vs the closest metagenome
+
+fastANI -q  metabat_clase.fa -r genome/metabat.KBP569_Feb_25m_nospike.7.fa  -o fastani.txt
+#98.9% same phew
+#oh actually gtdb gives ANI result :)
+
+################20230811###new mission- making larger trees####################
+
+#make 2 trees 
+#1) all f__Nitrosopumilaceae,  
+#2.)  g__Nitrosopumilus + a nice representative from f__Nitrosopumilaceae that isn't g__Nitrosopumilus
+
+
+cd $WORK/database/20230727/ref_bins
+gtt-get-accessions-from-GTDB -t Nitrosopumilaceae --GTDB-representatives-only
+
+GToTree -f list.of.mags -a GTDB-Nitrosopumilaceae-family-GTDB-rep-accs.txt -H Archaea -o gtotree_family_tree -D -j 4
+#################notices
+        60 accession(s) not successfully found at NCBI.
+        5 genome(s) removed due to having too few hits to the targeted SCGs.
+        1 gene(s) either had no hits or only multiple hits in each genome.
+        1 genome(s) had an estimated redundancy of >= 10%.
+    Reported along with additional informative run files in:
+        gtotree_family_tree/run_files/
+###################
+
+

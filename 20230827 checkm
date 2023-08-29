@@ -1,0 +1,14 @@
+#checkm for other genomes
+cd $WORK/database/20230727/ref_bins/
+
+checkm lineage_wf -x fna . ./checkm.out
+
+#genome database
+mkdir genomes
+#BB04_55m_spike_121_1-contigs.fa  Bin_580-32-contigs.fa  Candidatus_Nitrosomarinus_catalina_strain_SPOT01.fna  Candidatus_Nitrosopumilus_sediminis.fna         Nitrosopumilus_maritimus_SCM1.fna         Nitrosopumilus_zosterae_strain_NBM25.fna
+#Bin_32a-contigs.fa               Bin_68KS-contigs.fa    Candidatus_Nitrosopumilus_koreensis_AR1.fna           GCA_001437625.1_ASM143762v1_closest_mags.fna    Nitrosopumilus_oxyclinae_strain_HCE1.fna  metabat.KBP569_Feb_25m_nospike.7.fa
+#Bin_54a-contigs.fa               Bin_6a-contigs.fa      Candidatus_Nitrosopumilus_limneticus_isolate.fna      Nitrosopumilus_adriaticus_strain_NF5.fna        Nitrosopumilus_piranensis_strain_D3C.fna
+#Bin_571-38-contigs.fa            Bin_7KS-contigs.fa     Candidatus_Nitrosopumilus_salaria_BD31.fna            Nitrosopumilus_cobalaminigenes_strain_HCA1.fna  Nitrosopumilus_ureiphilus_strain_PS0.fna
+
+fastANI --ql fastani_list --rl fastani_list -o fastani
+

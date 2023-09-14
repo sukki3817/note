@@ -1,0 +1,145 @@
+/gxfs_work1/geomar/smomw536/database/20230727/ref_bins/iqtree_include_similar_genomes_20230825/run_files/individual_alignments
+
+conda activate gtotree
+grep -c '>' no* | grep ':47$'  | sed 's/:47$//' 
+grep -c '>' no* | grep ':47$'  | sed 's/:47$//'|sed 's/no\.dash\.//;s/_aln\.faa//' > single_gene_list
+
+for i in $(grep -c '>' no* | grep ':47$' | sed 's/:47$//')
+do
+echo "$i"
+done
+
+
+for i in $(grep -c '>' no* |grep '47$' | sed 's/:47$//;s/no\.dash\.//')
+do
+cat $i
+done
+catsequences single_gene_list
+
+
+
+>BB04_55m_spike_121_1-contigs
+IIIKPYITEKTFAMVENESKICFIVEISANKSEISEAVTTLYKQKVKKVNTARTIYGKKAFVQFENTEKARDLATKIGML
+>Bin_32a-contigs
+IIIKPYITEKTFAMIENESKICFIVEISANKSEISEAVKTLYNQNVRKVNTARTIYGKKAFVQFENTEKARDLATKIGML
+>Bin_54a-contigs
+IILKPYITEKTFAMVENESKICFIVERSANKTEIAEAVKTLYNEKATNVNTARTIYGKKAFVQFETTDKARDLATKIGML
+>BB04_55m_spike_121_1-contigs
+MTKKKALKGLGARYGIKLRKQYTKIHFTLKEKRTCPECGSKTGRDAVGIWSCKKCSYKVAGTAYDIKL
+>Bin_32a-contigs
+MSKKKALKGLGARYGIKLRKQYSKVHFTLKEKRTCPECGSEKGRDAVGIWSCKKCSYKVAGTAYDIKL
+>Bin_54a-contigs
+MAKQKSLKGLGARYGIKIRKQYTKIHLQLKAKRSCPQCGSKSGRDYVGIWSCKKCNLKVAGMAYDIKL
+
+
+>BB04_55m_spike_121_1-contigs
+IIIKPYITEKTFAMVENESKICFIVEISANKSEISEAVTTLYKQKVKKVNTARTIYGKKAFVQFENTEKARDLATKIGMLMTKKKALKGLGARYGIKLRKQYTKIHFTLKEKRTCPECGSKTGRDAVGIWSCKKCSYKVAGTAYDIKL
+>Bin_32a-contigs
+IIIKPYITEKTFAMIENESKICFIVEISANKSEISEAVKTLYNQNVRKVNTARTIYGKKAFVQFENTEKARDLATKIGMLMSKKKALKGLGARYGIKLRKQYSKVHFTLKEKRTCPECGSEKGRDAVGIWSCKKCSYKVAGTAYDIKL
+>Bin_54a-contigs
+IILKPYITEKTFAMVENESKICFIVERSANKTEIAEAVKTLYNEKATNVNTARTIYGKKAFVQFETTDKARDLATKIGMLMAKQKSLKGLGARYGIKIRKQYTKIHLQLKAKRSCPQCGSKSGRDYVGIWSCKKCNLKVAGMAYDIKL
+
+
+
+#################################### AU(aproximately unbiased) test
+cd gxfs_work1/geomar/smomw536/database/20230727/ref_bins/iqtree_include_similar_genomes_20230825/run_files/individual_alignments
+conda activate gtotree
+conda install -c bioconda seqkit
+seqkit concat $(grep -c '>' no* |grep '47$' | sed 's/:47$//;s/no\.dash\.//') > concatenated.fasta
+
+for i in $(grep -c '>' no* |grep '47$' | sed 's/:47$//')
+do
+fasttree $i > $i.fasttree
+done
+
+cat *fasttree > sg_concatenated.tre
+
+cd gxfs_work1/geomar/smomw536/database/20230727/ref_bins/iqtree_include_similar_genomes_20230825/run_files
+cp individual_alignments/concatenated.fasta .
+cp individual_alignments/sg_concatenated.tre .
+
+iqtree -s concatenated.fasta -z sg_concatenated.tre -zb 1000 -zw -au
+
+
+#Analysis results written to: 
+  IQ-TREE report:                concatenated.fasta.iqtree
+  Maximum-likelihood tree:       concatenated.fasta.treefile
+  Likelihood distances:          concatenated.fasta.mldist
+  Evaluated user trees:          concatenated.fasta.trees
+  Screen log file:               concatenated.fasta.log
+
+
+See concatenated.fasta.trees for trees with branch lengths.
+
+WARNING: Too few replicates for AU test. At least -zb 10000 for reliable results!
+
+Tree      logL    deltaL  bp-RELL    p-KH     p-SH    p-WKH    p-WSH       c-ELW       p-AU
+-------------------------------------------------------------------------------------------
+  1 -19795.89204   63.92   0.162 +  0.166 +  0.647 +  0.166 +  0.531 +     0.162 +    0.162 + 
+  2 -19731.97174       0   0.835 +  0.834 +      1 +  0.834 +   0.99 +     0.835 +    0.869 + 
+  3 -20093.22466  361.25       0 -      0 -  0.004 -      0 -      0 -  4.19e-40 -   0.0014 - 
+  4 -20469.60889  737.64       0 -      0 -      0 -      0 -      0 - 2.16e-117 - 4.15e-07 - 
+  5 -20376.72724  644.76       0 -      0 -      0 -      0 -      0 - 4.56e-169 - 9.48e-49 - 
+  6 -21191.15034  1459.2       0 -      0 -      0 -      0 -      0 -         0 - 2.11e-47 - 
+  7 -19960.35408  228.38   0.003 -  0.011 -    0.1 +  0.011 -  0.046 -     0.003 -  0.00359 - 
+
+deltaL  : logL difference from the maximal logl in the set.
+bp-RELL : bootstrap proportion using RELL method (Kishino et al. 1990).
+p-KH    : p-value of one sided Kishino-Hasegawa test (1989).
+p-SH    : p-value of Shimodaira-Hasegawa test (2000).
+p-WKH   : p-value of weighted KH test.
+p-WSH   : p-value of weighted SH test.
+c-ELW   : Expected Likelihood Weight (Strimmer & Rambaut 2002).
+p-AU    : p-value of approximately unbiased (AU) test (Shimodaira, 2002).
+
+
+#chatgpt#######
+###chatgpt says if p-AU is low, the reference tree doesn't fit well with that tree.
+To assess the difference in morphology between phylogenetic trees based on different sets of genes, you can use the AU (Approximately Unbiased) test or similar statistical tests. Here's a step-by-step guide on how to do it:
+
+Data Collection:
+
+First, you need to have the phylogenetic trees constructed from different sets of genes.
+Gather information about the morphological differences you want to analyze. This could include traits, characteristics, or measurements related to the organisms represented in the trees.
+Choose a Reference Tree:
+
+Select one of the phylogenetic trees as your reference tree. This will serve as the baseline for comparison.
+Prepare Data for Analysis:
+
+Annotate or label the reference tree with the morphological data for each species or group in the tree. You should have corresponding morphological data for each tip (species or group) in the tree.
+AU Test:
+
+Use software or statistical packages that support the AU test. These often include phylogenetic software like CONSEL or similar tools.
+Conduct the AU test to compare the reference tree (constructed from one gene) with the other trees (constructed from many genes).
+Hypotheses:
+
+Set up your hypotheses for the AU test. Typically, you will have two hypotheses:
+Null Hypothesis (H0): The reference tree (one gene) is a good fit for the morphological data.
+Alternative Hypothesis (HA): The reference tree is a poor fit for the morphological data, and one of the other trees (constructed from many genes) is a better fit.
+Run the Test:
+
+The AU test will calculate p-values for each tree being compared to the reference tree. These p-values assess how well each tree fits the morphological data.
+Lower p-values suggest that the tree is a poor fit for the morphological data, while higher p-values suggest a better fit.
+Interpret Results:
+
+If the p-value for the reference tree is very low (typically below your chosen significance threshold, e.g., p < 0.05), you may reject the null hypothesis and conclude that the reference tree does not fit the morphological data well.
+If one of the trees constructed from many genes has a higher p-value, it may be considered a better fit for the morphological data.
+Evaluate Morphological Differences:
+
+Compare the trees that fit the morphological data better to identify differences in morphology. Look for branches or clades in these trees that may suggest specific evolutionary relationships related to the observed morphological differences.
+Consider Biological Implications:
+
+Interpret the results in the context of your biological question. What do these differences in tree topology mean for the evolutionary history and morphology of the organisms?
+By following these steps and using the AU test or similar statistical tests, you can assess the differences in morphology between phylogenetic trees constructed from one gene and those constructed from many genes, helping you understand how the choice of genes affects the inferred evolutionary relationships and morphological patterns.
+#########
+
+no.dash.CTP-dep_RFKase_aln.faa.fasttree
+no.dash.Ribosomal_L13_aln.faa.fasttree
+no.dash.Ribosomal_S2_aln.faa.fasttree
+no.dash.Ribosomal_S7_aln.faa.fasttree
+no.dash.Ribosomal_S9_aln.faa.fasttree
+no.dash.Ribosom_S12_S23_aln.faa.fasttree
+no.dash.Trm56_aln.faa.fasttree
+
+
+

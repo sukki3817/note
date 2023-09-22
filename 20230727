@@ -423,7 +423,7 @@ sbatch -p cluster -t 4:00:00 --mem=100000 -J gengdb -o gengdb.out -e gengdb.err 
 
 
 ##anvi-pan-genome
-anvi-pan-genome -g PROCHLORO-GENOMES.db \
+#anvi-pan-genome -g PROCHLORO-GENOMES.db \
                 --project-name "Prochlorococcus_Pan" \
                 --output-dir PROCHLORO \
                 --num-threads 6 \
@@ -475,11 +475,7 @@ sbatch -p cluster -t 4:00:00 --mem=100000 -J panG -o panG.out -e panG.err -n 30 
   #u should include --num-threads,,,, it takes time
 
 
-anvi-pan-genome -g first-GENOMES.db \
-                --project-name "david_pangenome_nonncbi" \
-                --output-dir davidoutnonncbi \
-                --minbit 0.5 \
-                --mcl-inflation 10 --num-threads 10
+.
 
 
 
